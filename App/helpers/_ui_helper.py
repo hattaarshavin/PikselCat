@@ -21,8 +21,7 @@ class UIHelper:
                 error_callback(str(e))
         
         # Use QTimer to defer UI loading to next event loop cycle
-        QTimer.singleShot(0, load_ui)
-    
+        QTimer.singleShot(0, load_ui)      
     def load_widget_safely(self, base_dir, ui_filename, container_widget):
         """Load widget UI safely with error handling"""
         try:
@@ -30,6 +29,8 @@ class UIHelper:
             widget = self.load_ui_file(widget_ui_path, None)  # Don't set parent during loading
             if widget and container_widget:
                 layout = QVBoxLayout(container_widget)
+                layout.setContentsMargins(0, 0, 0, 0)  # No margin for full width
+                layout.setSpacing(0)  # Remove spacing
                 layout.addWidget(widget)  # Set parent here in main thread
                 container_widget.setLayout(layout)
                 return widget
@@ -47,16 +48,17 @@ class UIHelper:
             work_area_ui_path = self.get_widget_ui_path(base_dir, "work_area.ui")
             work_area_widget = self.load_ui_file(work_area_ui_path, None)
             
-            if dnd_widget and work_area_widget:
-                # Setup DnD container
+            if dnd_widget and work_area_widget:                # Setup DnD container
                 dnd_layout = QVBoxLayout(dnd_container)
+                dnd_layout.setContentsMargins(0, 0, 0, 0)  # No margin for full width
+                dnd_layout.setSpacing(0)  # Remove spacing
                 dnd_layout.addWidget(dnd_widget)
-                dnd_container.setLayout(dnd_layout)
-                
-                # Setup Work Area container
+                dnd_container.setLayout(dnd_layout)                # Setup Work Area container
                 work_area_container = workspace_widget.findChild(QWidget, "workAreaContainer")
                 if work_area_container:
                     work_area_layout = QVBoxLayout(work_area_container)
+                    work_area_layout.setContentsMargins(0, 0, 0, 0)  # No margin for full width
+                    work_area_layout.setSpacing(0)  # Remove spacing
                     work_area_layout.addWidget(work_area_widget)
                     work_area_container.setLayout(work_area_layout)
                 

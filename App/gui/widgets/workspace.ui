@@ -10,6 +10,21 @@
     <height>200</height>
    </rect>
   </property>  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
    <item>
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="sizePolicy">
@@ -21,8 +36,23 @@
      <property name="currentIndex">
       <number>0</number>
      </property>
-     <widget class="QWidget" name="dndPage">
+       <widget class="QWidget" name="dndPage">
       <layout class="QVBoxLayout" name="dndPageLayout">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QWidget" name="dndContainer" native="true">
          <property name="sizePolicy">
@@ -34,9 +64,23 @@
         </widget>
        </item>
       </layout>
-     </widget>
-     <widget class="QWidget" name="workAreaPage">
+     </widget>     <widget class="QWidget" name="workAreaPage">
       <layout class="QVBoxLayout" name="workAreaPageLayout">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QWidget" name="workAreaContainer" native="true">
          <property name="sizePolicy">
@@ -49,8 +93,10 @@
        </item>
       </layout>
      </widget>
-    </widget>
-   </item>
+    
+     </widget>
+   
+    </item>
   </layout>
  </widget>
  <resources/>

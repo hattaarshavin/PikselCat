@@ -8,6 +8,8 @@ QPushButton {
 QWidget#workspaceContainer {
     background-color: rgba(138, 142, 145, 0.08);
     border-radius: 10px;
+    margin: 0px;
+    padding: 0px;
 }
 
 QWidget#rightPanel {
@@ -15,28 +17,40 @@ QWidget#rightPanel {
     border-radius: 10px;
 }
 
-/* DnD Area Styling - Exact match */
+/* DnD Area Widget - Container styling */
 QWidget#DndAreaWidget {
+    background-color: transparent;
+    border: none;
+    margin: 0px;
+    padding: 0px;
+}
+
+/* DnD Frame Styling - The actual drag and drop area */
+QWidget#DndAreaWidget QFrame#dndFrame {
     background-color: rgba(138, 142, 145, 0.05);
     border: 2px dashed rgba(138, 142, 145, 0.3);
     border-radius: 15px;
+    margin: 0px;
 }
 
-/* DnD Area when dragging files over it */
-QWidget#DndAreaWidget[dragHover="true"] {
+/* DnD Frame when dragging files over it */
+QWidget#DndAreaWidget QFrame#dndFrame[dragHover="true"] {
     background-color: rgba(255, 127, 54, 0.15);
     border: 2px dashed #ff7f36;
     border-radius: 15px;
+    margin: 0px;
 }
 
 QWidget#DndAreaWidget QLabel#dndLabel {
     color: rgba(138, 142, 145, 0.8);
     font-size: 16px;
     font-weight: bold;
+    background-color: transparent;
+    border: none;
 }
 
 /* DnD Label when dragging files over */
-QWidget#DndAreaWidget[dragHover="true"] QLabel#dndLabel {
+QWidget#DndAreaWidget QFrame#dndFrame[dragHover="true"] QLabel#dndLabel {
     color: #ff7f36;
     font-size: 16px;
     font-weight: bold;
@@ -76,6 +90,11 @@ QWidget#DndAreaWidget QPushButton#openFolderButton:disabled {
 }
 
 /* Work Area Buttons - Consistent with other buttons */
+QWidget#WorkAreaWidget {
+    margin: 0px;
+    padding: 0px;
+}
+
 QWidget#WorkAreaWidget QPushButton#clearFilesButton {
     background-color: #ff7f36;
     color: white;
