@@ -12,9 +12,19 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QLabel" name="label">
+    <widget class="QWidget" name="dndContainer" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="fileListLabel">
      <property name="text">
-      <string>Workspace</string>
+      <string>No files loaded</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>

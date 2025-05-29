@@ -8,8 +8,7 @@ class MainController(QMainWindow):
     def __init__(self, base_dir):
         super().__init__()
         self.BASE_DIR = base_dir
-        
-        # Import dependencies
+          # Import dependencies
         from App.config.config_manager import ConfigManager
         from App.helpers._ui_helper import UIHelper
         
@@ -17,6 +16,13 @@ class MainController(QMainWindow):
         self.ui_helper = UIHelper()
         
         self.load_ui()
+        self.load_styles()
+        
+    def load_styles(self):
+        """Load CSS styles from main_style.css"""
+        css_content = self.ui_helper.load_css_file(self.BASE_DIR, "main_style.css")
+        if css_content:
+            self.setStyleSheet(css_content)
         
     def load_ui(self):
         """Load the main window UI"""
@@ -73,6 +79,10 @@ class MainController(QMainWindow):
                 layout = QVBoxLayout(actions_container)
                 layout.addWidget(actions_widget)
                 actions_container.setLayout(layout)
+                
+                # Initialize actions controller
+                from App.controller.actions import ActionsController
+                self.actions_controller = ActionsController(actions_widget)
         
         # Load statistics widget
         if statistics_container:
@@ -83,7 +93,7 @@ class MainController(QMainWindow):
                 layout.addWidget(statistics_widget)
                 statistics_container.setLayout(layout)
         
-        # Load workspace widget
+        # Load workspace widget with DnD area
         if workspace_container:
             workspace_ui_path = self.ui_helper.get_widget_ui_path(self.BASE_DIR, "workspace.ui")
             workspace_widget = self.ui_helper.load_ui_file(workspace_ui_path, workspace_container)
@@ -91,6 +101,25 @@ class MainController(QMainWindow):
                 layout = QVBoxLayout(workspace_container)
                 layout.addWidget(workspace_widget)
                 workspace_container.setLayout(layout)
+                
+                # Load DnD area inside workspace
+                dnd_container = workspace_widget.findChild(QWidget, "dndContainer")
+                if dnd_container:
+                    dnd_ui_path = self.ui_helper.get_widget_ui_path(self.BASE_DIR, "dnd_area.ui")
+                    dnd_widget = self.ui_helper.load_ui_file(dnd_ui_path, dnd_container)
+                    if dnd_widget:
+                        dnd_layout = QVBoxLayout(dnd_container)
+                        dnd_layout.addWidget(dnd_widget)
+                        dnd_container.setLayout(dnd_layout)
+                        
+                        # Initialize DnD handler
+                        from App.controller.dnd_handler import DndHandler
+                        self.dnd_handler = DndHandler(
+                            dnd_widget, 
+                            workspace_widget,
+                            dnd_widget.openFilesButton,
+                            dnd_widget.openFolderButton
+                        )
     
     def center_on_screen(self):
         """Center the window on screen"""

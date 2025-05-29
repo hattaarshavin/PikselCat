@@ -1,0 +1,109 @@
+/* General QPushButton settings to ensure border-radius works */
+QPushButton {
+    outline: none;
+    border-style: solid;
+}
+
+/* Widget Frame Styling - Specific widget classes */
+QWidget#workspaceContainer {
+    background-color: rgba(138, 142, 145, 0.08);
+    border-radius: 10px;
+}
+
+QWidget#rightPanel {
+    background-color: rgba(138, 142, 145, 0.08);
+    border-radius: 10px;
+}
+
+/* DnD Area Styling */
+DndAreaWidget {
+    background-color: rgba(138, 142, 145, 0.05);
+    border: 2px dashed rgba(138, 142, 145, 0.3);
+    border-radius: 15px;
+}
+
+DndAreaWidget QLabel#dndLabel {
+    color: rgba(138, 142, 145, 0.8);
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* DnD Buttons - More specific selectors */
+DndAreaWidget QPushButton#openFilesButton,
+DndAreaWidget QPushButton#openFolderButton {
+    background-color: rgba(138, 142, 145, 0.15);
+    color: #333333;
+    border: 2px solid rgba(138, 142, 145, 0.4);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 14px;
+    min-width: 120px;
+    min-height: 35px;
+    outline: none;
+    border-style: solid;
+}
+
+DndAreaWidget QPushButton#openFilesButton:hover,
+DndAreaWidget QPushButton#openFolderButton:hover {
+    background-color: rgba(138, 142, 145, 0.25);
+    border: 2px solid rgba(138, 142, 145, 0.6);
+    transform: translateY(-1px);
+}
+
+DndAreaWidget QPushButton#openFilesButton:pressed,
+DndAreaWidget QPushButton#openFolderButton:pressed {
+    background-color: rgba(138, 142, 145, 0.35);
+    border: 2px solid rgba(138, 142, 145, 0.7);
+    transform: translateY(1px);
+}
+
+/* Run Button Styles */
+QPushButton#runButton {
+    background-color: #4CAF50;
+    color: white;
+    border: 2px solid transparent;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    min-height: 20px;
+}
+
+QPushButton#runButton:hover {
+    background-color: #45a049;
+}
+
+QPushButton#runButton:pressed {
+    background-color: #3d8b40;
+}
+
+QPushButton#runButton:disabled {
+    background-color: rgba(138, 142, 145, 0.08);
+    color: #888888;
+    border: 2px solid transparent;
+}
+
+/* Stop Button Styles */
+QPushButton#stopButton {
+    background-color: #f44336;
+    color: white;
+    border: 2px solid transparent;
+    padding: 8px;
+    border-radius: 20px;
+    max-width: 40px;
+    min-height: 20px;
+}
+
+QPushButton#stopButton:hover {
+    background-color: #da190b;
+}
+
+QPushButton#stopButton:pressed {
+    background-color: #b71c1c;
+}
+
+QPushButton#stopButton:disabled {
+    background-color: rgba(138, 142, 145, 0.08);
+    color: #888888;
+    border: 2px solid transparent;
+}
