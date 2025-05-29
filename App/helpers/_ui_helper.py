@@ -8,19 +8,19 @@ class UIHelper:
         """Load UI file and return the loaded widget"""
         ui_file = QFile(str(ui_file_path))
         
-        print(f"Loading UI from: {ui_file_path}")
-        
         if ui_file.open(QFile.ReadOnly):
             loader = QUiLoader()
             widget = loader.load(ui_file, parent)
             ui_file.close()
             return widget
         else:
-            print(f"Could not load UI file: {ui_file_path}")
-            print(f"File exists: {ui_file_path.exists()}")
             return None
-    
     @staticmethod
     def get_ui_path(base_dir, ui_filename):
         """Get full path to UI file"""
         return base_dir / "App" / "gui" / "windows" / ui_filename
+    
+    @staticmethod
+    def get_widget_ui_path(base_dir, ui_filename):
+        """Get full path to widget UI file"""
+        return base_dir / "App" / "gui" / "widgets" / ui_filename
