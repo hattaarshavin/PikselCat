@@ -1,0 +1,10 @@
+{
+    "app_name": "PikselCat",
+    "version": "1.0.0",
+    "release_date": "2025-01-20",
+    "description": "Pixelcut batch automation tool for image processing.",
+    "license": "MIT",
+    "author": "Mudrikul Hikam",
+    "company": "Desainia Studio",
+    "app_icon": "pixelcat.ico"
+}
