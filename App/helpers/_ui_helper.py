@@ -36,19 +36,32 @@ class UIHelper:
         except Exception as e:
             print(f"Error loading widget {ui_filename}: {e}")
         return None
-    
     def load_dnd_widget_safely(self, base_dir, dnd_container, workspace_widget, init_callback):
         """Load DnD widget safely with initialization callback"""
         try:
+            # Load DnD widget
             dnd_ui_path = self.get_widget_ui_path(base_dir, "dnd_area.ui")
-            dnd_widget = self.load_ui_file(dnd_ui_path, None)  # Don't set parent during loading
-            if dnd_widget:
+            dnd_widget = self.load_ui_file(dnd_ui_path, None)
+            
+            # Load Work Area widget
+            work_area_ui_path = self.get_widget_ui_path(base_dir, "work_area.ui")
+            work_area_widget = self.load_ui_file(work_area_ui_path, None)
+            
+            if dnd_widget and work_area_widget:
+                # Setup DnD container
                 dnd_layout = QVBoxLayout(dnd_container)
-                dnd_layout.addWidget(dnd_widget)  # Set parent here in main thread
+                dnd_layout.addWidget(dnd_widget)
                 dnd_container.setLayout(dnd_layout)
                 
+                # Setup Work Area container
+                work_area_container = workspace_widget.findChild(QWidget, "workAreaContainer")
+                if work_area_container:
+                    work_area_layout = QVBoxLayout(work_area_container)
+                    work_area_layout.addWidget(work_area_widget)
+                    work_area_container.setLayout(work_area_layout)
+                
                 # Initialize DnD handler in main thread
-                QTimer.singleShot(0, lambda: init_callback(dnd_widget, workspace_widget))
+                QTimer.singleShot(0, lambda: init_callback(dnd_widget, workspace_widget, work_area_widget))
                 return dnd_widget
         except Exception as e:
             print(f"Error loading DnD widget: {e}")

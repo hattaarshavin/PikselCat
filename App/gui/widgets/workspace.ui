@@ -9,26 +9,46 @@
     <width>300</width>
     <height>200</height>
    </rect>
-  </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  </property>  <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QWidget" name="dndContainer" native="true">
+    <widget class="QStackedWidget" name="stackedWidget">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QLabel" name="fileListLabel">
-     <property name="text">
-      <string>No files loaded</string>
+     <property name="currentIndex">
+      <number>0</number>
      </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
+     <widget class="QWidget" name="dndPage">
+      <layout class="QVBoxLayout" name="dndPageLayout">
+       <item>
+        <widget class="QWidget" name="dndContainer" native="true">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="workAreaPage">
+      <layout class="QVBoxLayout" name="workAreaPageLayout">
+       <item>
+        <widget class="QWidget" name="workAreaContainer" native="true">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
   </layout>

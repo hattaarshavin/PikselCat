@@ -118,17 +118,26 @@ class MainController(QMainWindow):
                 
         except Exception as e:
             print(f"Error loading widgets: {e}")
-    
-    def init_dnd_handler(self, dnd_widget, workspace_widget):
+    def init_dnd_handler(self, dnd_widget, workspace_widget, work_area_widget):
         """Initialize DnD handler safely"""
         try:
             from App.controller.dnd_handler import DndHandler
-            self.dnd_handler = DndHandler(
-                dnd_widget, 
-                workspace_widget,
-                dnd_widget.openFilesButton,
-                dnd_widget.openFolderButton
-            )
+            from PySide6.QtWidgets import QPushButton
+            
+            # Find the buttons in the DnD widget
+            open_files_btn = dnd_widget.findChild(QPushButton, "openFilesButton")
+            open_folder_btn = dnd_widget.findChild(QPushButton, "openFolderButton")
+            
+            if open_files_btn and open_folder_btn:
+                self.dnd_handler = DndHandler(
+                    dnd_widget, 
+                    workspace_widget, 
+                    work_area_widget,
+                    open_files_btn, 
+                    open_folder_btn
+                )
+            else:
+                print("Error: Could not find DnD buttons")
         except Exception as e:
             print(f"Error initializing DnD handler: {e}")
     

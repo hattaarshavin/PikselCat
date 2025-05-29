@@ -22,40 +22,102 @@ QWidget#DndAreaWidget {
     border-radius: 15px;
 }
 
+/* DnD Area when dragging files over it */
+QWidget#DndAreaWidget[dragHover="true"] {
+    background-color: rgba(255, 127, 54, 0.15);
+    border: 2px dashed #ff7f36;
+    border-radius: 15px;
+}
+
 QWidget#DndAreaWidget QLabel#dndLabel {
     color: rgba(138, 142, 145, 0.8);
     font-size: 16px;
     font-weight: bold;
 }
 
-/* DnD Buttons - Exact selector based on UI structure */
+/* DnD Label when dragging files over */
+QWidget#DndAreaWidget[dragHover="true"] QLabel#dndLabel {
+    color: #ff7f36;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* DnD Buttons - Updated to match actions button style */
 QWidget#DndAreaWidget QPushButton#openFilesButton,
 QWidget#DndAreaWidget QPushButton#openFolderButton {
-    background-color: rgba(138, 142, 145, 0.15);
-    color: #333333;
-    border: 2px solid rgba(138, 142, 145, 0.4);
-    padding: 10px 20px;
-    border-radius: 8px;
+    background-color: #ff7f36;
+    color: white;
+    border: 2px solid transparent;
+    padding: 8px 16px;
+    border-radius: 20px;
     font-weight: bold;
     font-size: 14px;
     min-width: 120px;
-    min-height: 35px;
+    min-height: 20px;
     outline: none;
     border-style: solid;
 }
 
 QWidget#DndAreaWidget QPushButton#openFilesButton:hover,
 QWidget#DndAreaWidget QPushButton#openFolderButton:hover {
-    background-color: rgba(138, 142, 145, 0.25);
-    border: 2px solid rgba(138, 142, 145, 0.6);
-    padding: 9px 20px 11px 20px;
+    background-color: #e6722f;
 }
 
 QWidget#DndAreaWidget QPushButton#openFilesButton:pressed,
 QWidget#DndAreaWidget QPushButton#openFolderButton:pressed {
-    background-color: rgba(138, 142, 145, 0.35);
-    border: 2px solid rgba(138, 142, 145, 0.7);
-    padding: 11px 20px 9px 20px;
+    background-color: #cc6529;
+}
+
+QWidget#DndAreaWidget QPushButton#openFilesButton:disabled,
+QWidget#DndAreaWidget QPushButton#openFolderButton:disabled {
+    background-color: rgba(138, 142, 145, 0.08);
+    color: #888888;
+    border: 2px solid transparent;
+}
+
+/* Work Area Buttons - Consistent with other buttons */
+QWidget#WorkAreaWidget QPushButton#clearFilesButton {
+    background-color: #ff7f36;
+    color: white;
+    border: 2px solid transparent;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 14px;
+    min-width: 120px;
+    min-height: 20px;
+    outline: none;
+    border-style: solid;
+}
+
+QWidget#WorkAreaWidget QPushButton#clearFilesButton:hover {
+    background-color: #e6722f;
+}
+
+QWidget#WorkAreaWidget QPushButton#clearFilesButton:pressed {
+    background-color: #cc6529;
+}
+
+QWidget#WorkAreaWidget QPushButton#processFilesButton {
+    background-color: #ff7f36;
+    color: white;
+    border: 2px solid transparent;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 14px;
+    min-width: 120px;
+    min-height: 20px;
+    outline: none;
+    border-style: solid;
+}
+
+QWidget#WorkAreaWidget QPushButton#processFilesButton:hover {
+    background-color: #e6722f;
+}
+
+QWidget#WorkAreaWidget QPushButton#processFilesButton:pressed {
+    background-color: #cc6529;
 }
 
 /* Run Button Styles */
