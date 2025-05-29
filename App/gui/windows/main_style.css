@@ -15,22 +15,22 @@ QWidget#rightPanel {
     border-radius: 10px;
 }
 
-/* DnD Area Styling */
-DndAreaWidget {
+/* DnD Area Styling - Exact match */
+QWidget#DndAreaWidget {
     background-color: rgba(138, 142, 145, 0.05);
     border: 2px dashed rgba(138, 142, 145, 0.3);
     border-radius: 15px;
 }
 
-DndAreaWidget QLabel#dndLabel {
+QWidget#DndAreaWidget QLabel#dndLabel {
     color: rgba(138, 142, 145, 0.8);
     font-size: 16px;
     font-weight: bold;
 }
 
-/* DnD Buttons - More specific selectors */
-DndAreaWidget QPushButton#openFilesButton,
-DndAreaWidget QPushButton#openFolderButton {
+/* DnD Buttons - Exact selector based on UI structure */
+QWidget#DndAreaWidget QPushButton#openFilesButton,
+QWidget#DndAreaWidget QPushButton#openFolderButton {
     background-color: rgba(138, 142, 145, 0.15);
     color: #333333;
     border: 2px solid rgba(138, 142, 145, 0.4);
@@ -44,18 +44,18 @@ DndAreaWidget QPushButton#openFolderButton {
     border-style: solid;
 }
 
-DndAreaWidget QPushButton#openFilesButton:hover,
-DndAreaWidget QPushButton#openFolderButton:hover {
+QWidget#DndAreaWidget QPushButton#openFilesButton:hover,
+QWidget#DndAreaWidget QPushButton#openFolderButton:hover {
     background-color: rgba(138, 142, 145, 0.25);
     border: 2px solid rgba(138, 142, 145, 0.6);
-    transform: translateY(-1px);
+    padding: 9px 20px 11px 20px;
 }
 
-DndAreaWidget QPushButton#openFilesButton:pressed,
-DndAreaWidget QPushButton#openFolderButton:pressed {
+QWidget#DndAreaWidget QPushButton#openFilesButton:pressed,
+QWidget#DndAreaWidget QPushButton#openFolderButton:pressed {
     background-color: rgba(138, 142, 145, 0.35);
     border: 2px solid rgba(138, 142, 145, 0.7);
-    transform: translateY(1px);
+    padding: 11px 20px 9px 20px;
 }
 
 /* Run Button Styles */

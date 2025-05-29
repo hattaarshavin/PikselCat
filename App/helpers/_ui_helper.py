@@ -1,8 +1,59 @@
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtCore import QFile
+from PySide6.QtCore import QFile, QTimer
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 from pathlib import Path
 
 class UIHelper:
+    def __init__(self):
+        pass
+    
+    def load_main_ui_async(self, base_dir, ui_filename, success_callback, error_callback):
+        """Load main UI asynchronously using QTimer to defer execution"""
+        def load_ui():
+            try:
+                ui_file_path = self.get_ui_path(base_dir, ui_filename)
+                ui_window = self.load_ui_file(ui_file_path, None)
+                if ui_window:
+                    success_callback(ui_window)
+                else:
+                    error_callback("Failed to load UI file")
+            except Exception as e:
+                error_callback(str(e))
+        
+        # Use QTimer to defer UI loading to next event loop cycle
+        QTimer.singleShot(0, load_ui)
+    
+    def load_widget_safely(self, base_dir, ui_filename, container_widget):
+        """Load widget UI safely with error handling"""
+        try:
+            widget_ui_path = self.get_widget_ui_path(base_dir, ui_filename)
+            widget = self.load_ui_file(widget_ui_path, None)  # Don't set parent during loading
+            if widget and container_widget:
+                layout = QVBoxLayout(container_widget)
+                layout.addWidget(widget)  # Set parent here in main thread
+                container_widget.setLayout(layout)
+                return widget
+        except Exception as e:
+            print(f"Error loading widget {ui_filename}: {e}")
+        return None
+    
+    def load_dnd_widget_safely(self, base_dir, dnd_container, workspace_widget, init_callback):
+        """Load DnD widget safely with initialization callback"""
+        try:
+            dnd_ui_path = self.get_widget_ui_path(base_dir, "dnd_area.ui")
+            dnd_widget = self.load_ui_file(dnd_ui_path, None)  # Don't set parent during loading
+            if dnd_widget:
+                dnd_layout = QVBoxLayout(dnd_container)
+                dnd_layout.addWidget(dnd_widget)  # Set parent here in main thread
+                dnd_container.setLayout(dnd_layout)
+                
+                # Initialize DnD handler in main thread
+                QTimer.singleShot(0, lambda: init_callback(dnd_widget, workspace_widget))
+                return dnd_widget
+        except Exception as e:
+            print(f"Error loading DnD widget: {e}")
+        return None
+    
     @staticmethod
     def load_ui_file(ui_file_path, parent=None):
         """Load UI file and return the loaded widget"""

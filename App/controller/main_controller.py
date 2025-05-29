@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QMainWindow, QApplication
 from PySide6.QtGui import QIcon
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from pathlib import Path
 import os
 
@@ -8,35 +8,32 @@ class MainController(QMainWindow):
     def __init__(self, base_dir):
         super().__init__()
         self.BASE_DIR = base_dir
-          # Import dependencies
+        
+        # Import dependencies
         from App.config.config_manager import ConfigManager
         from App.helpers._ui_helper import UIHelper
         
         self.config_manager = ConfigManager(base_dir)
         self.ui_helper = UIHelper()
         
-        self.load_ui()
-        self.load_styles()
+        # Use UI helper to load main UI asynchronously
+        self.ui_helper.load_main_ui_async(
+            self.BASE_DIR, 
+            "main_window.ui",
+            self.on_ui_loaded,
+            self.on_ui_error
+        )
         
-    def load_styles(self):
-        """Load CSS styles from main_style.css"""
-        css_content = self.ui_helper.load_css_file(self.BASE_DIR, "main_style.css")
-        if css_content:
-            self.setStyleSheet(css_content)
-        
-    def load_ui(self):
-        """Load the main window UI"""
-        ui_file_path = self.ui_helper.get_ui_path(self.BASE_DIR, "main_window.ui")
-        ui_window = self.ui_helper.load_ui_file(ui_file_path, None)
-        
+    def on_ui_loaded(self, ui_window):
+        """Handle UI loaded event - runs in main thread"""
         if ui_window:
             # Copy the centralwidget from loaded UI to our window
             centralwidget = ui_window.centralWidget()
             if centralwidget:
                 self.setCentralWidget(centralwidget)
                 
-                # Load and add the widget UIs
-                self.load_widgets()
+                # Load widgets after UI is set
+                QTimer.singleShot(0, self.load_widgets)
             
             # Copy menubar and statusbar if they exist
             if ui_window.menuBar():
@@ -54,72 +51,86 @@ class MainController(QMainWindow):
             if icon_path.exists():
                 window_icon = QIcon(str(icon_path))
                 self.setWindowIcon(window_icon)
-        else:
-            # Fallback if UI loading fails
-            from PySide6.QtWidgets import QLabel
-            fallback_label = QLabel("Hello World from PikselCat!")
-            fallback_label.setAlignment(Qt.AlignCenter)
-            self.setCentralWidget(fallback_label)
+        
+        # Load styles after UI is ready
+        QTimer.singleShot(0, self.load_styles)
+        
+    def on_ui_error(self, error_message):
+        """Handle UI loading error"""
+        from PySide6.QtWidgets import QLabel
+        fallback_label = QLabel(f"UI Loading Error: {error_message}")
+        fallback_label.setAlignment(Qt.AlignCenter)
+        self.setCentralWidget(fallback_label)
+        
+    def load_styles(self):
+        """Load CSS styles from main_style.css"""
+        try:
+            css_content = self.ui_helper.load_css_file(self.BASE_DIR, "main_style.css")
+            if css_content:
+                self.setStyleSheet(css_content)
+        except Exception as e:
+            print(f"Error loading styles: {e}")
     
     def load_widgets(self):
-        """Load and integrate the widget UIs"""
-        from PySide6.QtWidgets import QVBoxLayout, QWidget
+        """Load and integrate the widget UIs using UI helper"""
+        from PySide6.QtWidgets import QWidget
         
-        # Find the container widgets
-        central_widget = self.centralWidget()
-        actions_container = central_widget.findChild(QWidget, "actionsContainer")
-        statistics_container = central_widget.findChild(QWidget, "statisticsContainer")
-        workspace_container = central_widget.findChild(QWidget, "workspaceContainer")
-        
-        # Load actions widget
-        if actions_container:
-            actions_ui_path = self.ui_helper.get_widget_ui_path(self.BASE_DIR, "actions.ui")
-            actions_widget = self.ui_helper.load_ui_file(actions_ui_path, actions_container)
-            if actions_widget:
-                layout = QVBoxLayout(actions_container)
-                layout.addWidget(actions_widget)
-                actions_container.setLayout(layout)
+        try:
+            # Find the container widgets
+            central_widget = self.centralWidget()
+            if not central_widget:
+                return
                 
-                # Initialize actions controller
-                from App.controller.actions import ActionsController
-                self.actions_controller = ActionsController(actions_widget)
-        
-        # Load statistics widget
-        if statistics_container:
-            statistics_ui_path = self.ui_helper.get_widget_ui_path(self.BASE_DIR, "statistics.ui")
-            statistics_widget = self.ui_helper.load_ui_file(statistics_ui_path, statistics_container)
-            if statistics_widget:
-                layout = QVBoxLayout(statistics_container)
-                layout.addWidget(statistics_widget)
-                statistics_container.setLayout(layout)
-        
-        # Load workspace widget with DnD area
-        if workspace_container:
-            workspace_ui_path = self.ui_helper.get_widget_ui_path(self.BASE_DIR, "workspace.ui")
-            workspace_widget = self.ui_helper.load_ui_file(workspace_ui_path, workspace_container)
-            if workspace_widget:
-                layout = QVBoxLayout(workspace_container)
-                layout.addWidget(workspace_widget)
-                workspace_container.setLayout(layout)
-                
-                # Load DnD area inside workspace
-                dnd_container = workspace_widget.findChild(QWidget, "dndContainer")
-                if dnd_container:
-                    dnd_ui_path = self.ui_helper.get_widget_ui_path(self.BASE_DIR, "dnd_area.ui")
-                    dnd_widget = self.ui_helper.load_ui_file(dnd_ui_path, dnd_container)
-                    if dnd_widget:
-                        dnd_layout = QVBoxLayout(dnd_container)
-                        dnd_layout.addWidget(dnd_widget)
-                        dnd_container.setLayout(dnd_layout)
-                        
-                        # Initialize DnD handler
-                        from App.controller.dnd_handler import DndHandler
-                        self.dnd_handler = DndHandler(
-                            dnd_widget, 
+            actions_container = central_widget.findChild(QWidget, "actionsContainer")
+            statistics_container = central_widget.findChild(QWidget, "statisticsContainer")
+            workspace_container = central_widget.findChild(QWidget, "workspaceContainer")
+            
+            # Load actions widget using UI helper
+            if actions_container:
+                actions_widget = self.ui_helper.load_widget_safely(
+                    self.BASE_DIR, "actions.ui", actions_container
+                )
+                if actions_widget:
+                    from App.controller.actions import ActionsController
+                    self.actions_controller = ActionsController(actions_widget)
+            
+            # Load statistics widget using UI helper
+            if statistics_container:
+                self.ui_helper.load_widget_safely(
+                    self.BASE_DIR, "statistics.ui", statistics_container
+                )
+            
+            # Load workspace widget using UI helper
+            if workspace_container:
+                workspace_widget = self.ui_helper.load_widget_safely(
+                    self.BASE_DIR, "workspace.ui", workspace_container
+                )
+                if workspace_widget:
+                    # Load DnD area inside workspace using UI helper
+                    dnd_container = workspace_widget.findChild(QWidget, "dndContainer")
+                    if dnd_container:
+                        self.ui_helper.load_dnd_widget_safely(
+                            self.BASE_DIR, 
+                            dnd_container, 
                             workspace_widget,
-                            dnd_widget.openFilesButton,
-                            dnd_widget.openFolderButton
+                            self.init_dnd_handler
                         )
+                
+        except Exception as e:
+            print(f"Error loading widgets: {e}")
+    
+    def init_dnd_handler(self, dnd_widget, workspace_widget):
+        """Initialize DnD handler safely"""
+        try:
+            from App.controller.dnd_handler import DndHandler
+            self.dnd_handler = DndHandler(
+                dnd_widget, 
+                workspace_widget,
+                dnd_widget.openFilesButton,
+                dnd_widget.openFolderButton
+            )
+        except Exception as e:
+            print(f"Error initializing DnD handler: {e}")
     
     def center_on_screen(self):
         """Center the window on screen"""
