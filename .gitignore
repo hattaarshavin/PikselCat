@@ -177,4 +177,3 @@ cython_debug/
 # Aplication specific files
 tests/
 python/
-App/config/app_config.json
