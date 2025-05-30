@@ -4,9 +4,13 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 from pathlib import Path
 
 class UIHelper:
-    def __init__(self):
-        pass
-    
+    def __init__(self, status_helper=None):
+        self.status_helper = status_helper
+        
+    def set_status_helper(self, status_helper):
+        """Set the status helper reference for error reporting"""
+        self.status_helper = status_helper
+        
     def load_main_ui_async(self, base_dir, ui_filename, success_callback, error_callback):
         """Load main UI asynchronously using QTimer to defer execution"""
         def load_ui():
@@ -16,12 +20,18 @@ class UIHelper:
                 if ui_window:
                     success_callback(ui_window)
                 else:
-                    error_callback("Failed to load UI file")
+                    error_msg = "Failed to load UI file"
+                    if self.status_helper:
+                        self.status_helper.show_error(error_msg)
+                    error_callback(error_msg)
             except Exception as e:
+                error_msg = f"Error loading UI: {str(e)}"
+                if self.status_helper:
+                    self.status_helper.show_error(error_msg)
                 error_callback(str(e))
         
         # Use QTimer to defer UI loading to next event loop cycle
-        QTimer.singleShot(0, load_ui)      
+        QTimer.singleShot(0, load_ui)    
     def load_widget_safely(self, base_dir, ui_filename, container_widget):
         """Load widget UI safely with error handling"""
         try:
@@ -35,7 +45,10 @@ class UIHelper:
                 container_widget.setLayout(layout)
                 return widget
         except Exception as e:
-            print(f"Error loading widget {ui_filename}: {e}")
+            error_msg = f"Error loading widget {ui_filename}: {e}"
+            if self.status_helper:
+                self.status_helper.show_error(error_msg)
+            print(error_msg)
         return None
     def load_dnd_widget_safely(self, base_dir, dnd_container, workspace_widget, init_callback):
         """Load DnD widget safely with initialization callback"""

@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QWidget, QLabel, QFileDialog, QPushButton, QStackedWidget
 from PySide6.QtCore import QObject, Signal, Qt
 from PySide6.QtGui import QDragEnterEvent, QDropEvent, QDragMoveEvent, QDragLeaveEvent
-import os
+import qtawesome as qta
 import os
 
 class DragDropWidget(QWidget):
@@ -14,7 +14,6 @@ class DragDropWidget(QWidget):
         super().__init__(parent)
         self.setAcceptDrops(True)
         # Make widget transparent to mouse events except drag/drop
-        self.setAttribute(Qt.WA_TransparentForMouseEvents, False)
     
     def dragEnterEvent(self, event: QDragEnterEvent):
         if event.mimeData().hasUrls():
@@ -58,12 +57,14 @@ class DragDropWidget(QWidget):
 class DndHandler(QObject):
     # Signal emitted when files are loaded
     files_loaded = Signal(list)
+    # Remove status_update signal - use StatusHelper directly
     
-    def __init__(self, dnd_widget: QWidget, workspace_widget: QWidget, work_area_widget: QWidget, open_files_btn: QPushButton, open_folder_btn: QPushButton):
+    def __init__(self, dnd_widget: QWidget, workspace_widget: QWidget, work_area_widget: QWidget, open_files_btn: QPushButton, open_folder_btn: QPushButton, status_helper):
         super().__init__()
         self.dnd_widget = dnd_widget
         self.workspace_widget = workspace_widget
         self.work_area_widget = work_area_widget
+        self.status_helper = status_helper
         self.loaded_files = []
         self.last_directory = ""  # Track last used directory
         
@@ -72,14 +73,49 @@ class DndHandler(QObject):
         self.setup_connections(open_files_btn, open_folder_btn)
         self.setup_work_area_connections()
         self.setup_drag_drop()
+        self.setup_ui()
         
         # Initially show DnD area (index 0)
         if self.stacked_widget:
             self.stacked_widget.setCurrentIndex(0)
+        # Set initial status
+        self.status_helper.show_ready("Drag & drop files or select files/folder")
+    
+    def setup_ui(self):
+        """Setup the UI elements with icons"""
+        # Setup DnD area icons
+        if self.dnd_widget:
+            # Find and set icon for open files button
+            open_files_btn = self.dnd_widget.findChild(QPushButton, "openFilesButton")
+            if open_files_btn:
+                file_icon = qta.icon('fa6s.file', color='white')
+                open_files_btn.setIcon(file_icon)
+            
+            # Find and set icon for open folder button
+            open_folder_btn = self.dnd_widget.findChild(QPushButton, "openFolderButton")
+            if open_folder_btn:
+                folder_icon = qta.icon('fa6s.folder-open', color='white')
+                open_folder_btn.setIcon(folder_icon)
+        
+        # Setup work area icons
+        if self.work_area_widget:
+            # Find and set icon for clear button
+            clear_btn = self.work_area_widget.findChild(QPushButton, "clearFilesButton")
+            if clear_btn:
+                clear_icon = qta.icon('fa6s.trash', color='white')
+                clear_btn.setIcon(clear_icon)
+            
+            # Find and set icon for process button
+            process_btn = self.work_area_widget.findChild(QPushButton, "processFilesButton")
+            if process_btn:
+                process_icon = qta.icon('fa6s.gear', color='white')
+                process_btn.setIcon(process_icon)
+    
     def setup_connections(self, open_files_btn: QPushButton, open_folder_btn: QPushButton):
         """Setup button connections"""
         open_files_btn.clicked.connect(self.open_files)
         open_folder_btn.clicked.connect(self.open_folder)
+    
     def setup_work_area_connections(self):
         """Setup work area button connections"""
         if self.work_area_widget:
@@ -126,6 +162,8 @@ class DndHandler(QObject):
     
     def on_drag_enter(self):
         """Handle drag enter visual feedback"""
+        self.status_helper.show_status("Files detected - Drop to load files", self.status_helper.PRIORITY_NORMAL)
+        
         if hasattr(self, 'drag_drop_overlay'):
             self.drag_drop_overlay.setProperty("dragHover", True)
             self.drag_drop_overlay.style().unpolish(self.drag_drop_overlay)
@@ -138,6 +176,8 @@ class DndHandler(QObject):
     
     def on_drag_leave(self):
         """Handle drag leave visual feedback"""
+        # Remove status message on drag leave - let it return to previous state naturally
+        
         if hasattr(self, 'drag_drop_overlay'):
             self.drag_drop_overlay.setProperty("dragHover", False)
             self.drag_drop_overlay.style().unpolish(self.drag_drop_overlay)
@@ -150,6 +190,8 @@ class DndHandler(QObject):
 
     def open_files(self):
         """Open file dialog to select multiple files"""
+        # Remove opening dialog message - too verbose
+        
         files, _ = QFileDialog.getOpenFileNames(
             self.dnd_widget,
             "Select Files",
@@ -160,9 +202,12 @@ class DndHandler(QObject):
             # Update last directory to the directory of the first selected file
             self.last_directory = os.path.dirname(files[0])
             self.load_files(files)
+        # Remove cancellation message - not important
     
     def open_folder(self):
         """Open folder dialog to select a folder"""
+        # Remove opening dialog message - too verbose
+        
         folder = QFileDialog.getExistingDirectory(
             self.dnd_widget,
             "Select Folder",
@@ -171,12 +216,18 @@ class DndHandler(QObject):
         if folder:
             # Update last directory to the selected folder
             self.last_directory = folder
+            
             # Get all files in the folder
             files = []
             for root, dirs, filenames in os.walk(folder):
                 for filename in filenames:
                     files.append(os.path.join(root, filename))
-            self.load_files(files)
+            
+            if files:
+                self.load_files(files)
+            else:
+                self.status_helper.show_status("No files found in folder", self.status_helper.PRIORITY_NORMAL)
+        # Remove cancellation message - not important
     
     def load_files(self, files):
         """Load files and update display"""
@@ -184,17 +235,26 @@ class DndHandler(QObject):
         self.update_file_display()
         self.switch_to_work_area()
         self.files_loaded.emit(files)
+        
+        self.status_helper.show_success("File loading", len(files))
     
     def clear_files(self):
         """Clear all loaded files and switch back to DnD area"""
         self.loaded_files = []
         self.switch_to_dnd_area()
         self.files_loaded.emit([])
+        
+        self.status_helper.show_ready("Ready for new files")
     
     def process_files(self):
         """Process the loaded files - placeholder for future implementation"""
-        print(f"Processing {len(self.loaded_files)} files...")
-        # Add your file processing logic here
+        if self.loaded_files:
+            self.status_helper.show_processing("files", len(self.loaded_files))
+            print(f"Processing {len(self.loaded_files)} files...")
+            # Add your file processing logic here
+            self.status_helper.show_success("Processing", len(self.loaded_files))
+        else:
+            self.status_helper.show_status("No files to process", self.status_helper.PRIORITY_NORMAL)
     
     def switch_to_work_area(self):
         """Switch to work area view"""

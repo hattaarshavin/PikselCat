@@ -8,13 +8,20 @@ class MainController(QMainWindow):
     def __init__(self, base_dir):
         super().__init__()
         self.BASE_DIR = base_dir
-        
-        # Import dependencies
+          # Import dependencies
         from App.config.config_manager import ConfigManager
         from App.helpers._ui_helper import UIHelper
-        
+        from App.helpers._status_helper import StatusHelper
         self.config_manager = ConfigManager(base_dir)
         self.ui_helper = UIHelper()
+        self.status_helper = StatusHelper()
+        
+        # Set status helper reference in ui helper for error reporting
+        self.ui_helper.set_status_helper(self.status_helper)
+        
+        # Controllers for managing status updates
+        self.dnd_handler = None
+        self.actions_controller = None
         
         # Use UI helper to load main UI asynchronously
         self.ui_helper.load_main_ui_async(
@@ -23,7 +30,6 @@ class MainController(QMainWindow):
             self.on_ui_loaded,
             self.on_ui_error
         )
-        
     def on_ui_loaded(self, ui_window):
         """Handle UI loaded event - runs in main thread"""
         if ui_window:
@@ -34,12 +40,16 @@ class MainController(QMainWindow):
                 
                 # Load widgets after UI is set
                 QTimer.singleShot(0, self.load_widgets)
-            
+                
             # Copy menubar and statusbar if they exist
             if ui_window.menuBar():
                 self.setMenuBar(ui_window.menuBar())
             if ui_window.statusBar():
                 self.setStatusBar(ui_window.statusBar())
+                # Set status bar reference in status helper
+                self.status_helper.set_status_bar(self.statusBar())
+                # Set initial status message
+                self.status_helper.show_ready("Application ready")
             
             # Set window properties
             self.setWindowTitle(self.config_manager.get("app_name"))
@@ -60,22 +70,25 @@ class MainController(QMainWindow):
         from PySide6.QtWidgets import QLabel
         fallback_label = QLabel(f"UI Loading Error: {error_message}")
         fallback_label.setAlignment(Qt.AlignCenter)
-        self.setCentralWidget(fallback_label)
-        
+        self.setCentralWidget(fallback_label)        # Update status bar if available
+        if self.statusBar():
+            self.statusBar().showMessage(f"Error: {error_message}")
     def load_styles(self):
         """Load CSS styles from main_style.css"""
         try:
             css_content = self.ui_helper.load_css_file(self.BASE_DIR, "main_style.css")
             if css_content:
-                self.setStyleSheet(css_content)
+                self.setStyleSheet(css_content)        
         except Exception as e:
             print(f"Error loading styles: {e}")
+            self.status_helper.show_error("Failed to load UI styles")
     
     def load_widgets(self):
         """Load and integrate the widget UIs using UI helper"""
         from PySide6.QtWidgets import QWidget
-        
         try:
+
+            
             # Find the container widgets
             central_widget = self.centralWidget()
             if not central_widget:
@@ -90,15 +103,18 @@ class MainController(QMainWindow):
                 actions_widget = self.ui_helper.load_widget_safely(
                     self.BASE_DIR, "actions.ui", actions_container
                 )
-                if actions_widget:
+                if actions_widget:                    
                     from App.controller.actions import ActionsController
-                    self.actions_controller = ActionsController(actions_widget)
+                    self.actions_controller = ActionsController(actions_widget, self.status_helper)
+                    # No need to connect signals - StatusHelper is used directly
             
             # Load statistics widget using UI helper
             if statistics_container:
-                self.ui_helper.load_widget_safely(
+                stats_widget = self.ui_helper.load_widget_safely(
                     self.BASE_DIR, "statistics.ui", statistics_container
                 )
+                if stats_widget:
+                    pass
             
             # Load workspace widget using UI helper
             if workspace_container:
@@ -106,6 +122,9 @@ class MainController(QMainWindow):
                     self.BASE_DIR, "workspace.ui", workspace_container
                 )
                 if workspace_widget:
+                    # TODO: Initialize workspace controller if needed
+                    pass
+
                     # Load DnD area inside workspace using UI helper
                     dnd_container = workspace_widget.findChild(QWidget, "dndContainer")
                     if dnd_container:
@@ -115,9 +134,9 @@ class MainController(QMainWindow):
                             workspace_widget,
                             self.init_dnd_handler
                         )
-                
         except Exception as e:
             print(f"Error loading widgets: {e}")
+            self.status_helper.show_error(f"Failed to load widgets: {e}")    
     def init_dnd_handler(self, dnd_widget, workspace_widget, work_area_widget):
         """Initialize DnD handler safely"""
         try:
@@ -134,12 +153,17 @@ class MainController(QMainWindow):
                     workspace_widget, 
                     work_area_widget,
                     open_files_btn, 
-                    open_folder_btn
+                    open_folder_btn,
+                    self.status_helper
                 )
+                # No need to connect signals - StatusHelper is used directly
+                self.status_helper.show_ready("Drag & drop ready")
             else:
                 print("Error: Could not find DnD buttons")
+                self.status_helper.show_error("Could not find DnD buttons")
         except Exception as e:
             print(f"Error initializing DnD handler: {e}")
+            self.status_helper.show_error(f"DnD handler initialization failed: {e}")
     
     def center_on_screen(self):
         """Center the window on screen"""
