@@ -196,7 +196,7 @@ class WorkHandler(QObject):
                 widget_to_remove.deleteLater()
                   # Update header
                 self.update_work_area_header()
-                self.update_cost_calculation()
+                self.update_cost_calculation()  # This will handle button state
                 
                 # If no files left, switch back to DnD area
                 if not self.loaded_files:
@@ -277,10 +277,11 @@ class WorkHandler(QObject):
         self.switch_to_dnd_area()
         self.files_cleared.emit()
         
-        # Update cost calculation after clearing files
+        # Update cost calculation after clearing files (will disable run button)
         self.update_cost_calculation()
         
         self.status_helper.show_ready("Ready for new files")
+    
     def switch_to_work_area(self):
         """Switch to work area view"""
         if self.stacked_widget:
@@ -381,15 +382,37 @@ class WorkHandler(QObject):
                 if remaining_after < 0:
                     remaining_label.setText("Insufficient Pixelcut Generative Credits")
                     remaining_label.setStyleSheet("color: #dc3545; font-size: 12px; font-weight: bold; margin: 2px;")
+                    # Disable run button when insufficient credits
+                    self._update_run_button_state(False)
                 else:
                     remaining_label.setText(f"Remaining credit after process: {remaining_after} Credit")
                     remaining_label.setStyleSheet("color: #28a745; font-size: 12px; font-weight: normal; margin: 2px;")
+                    # Enable run button when sufficient credits
+                    self._update_run_button_state(True)
             else:
-                # Jika tidak ada files, tampilkan default
+                # Jika tidak ada files, tampilkan default dan DISABLE run button
                 cost_label.setText("Estimated cost: 0 Credit for 0 files")
                 remaining_label.setText("Load files to see credit calculation")
                 remaining_label.setStyleSheet("color: #17a2b8; font-size: 12px; font-style: italic; margin: 2px;")
+                # Disable run button when no files
+                self._update_run_button_state(False)
 
+    def _update_run_button_state(self, enabled):
+        """Update run button enabled/disabled state"""
+        try:
+            # Get actions controller to update run button
+            from App.controller.main_controller import MainController
+            import gc
+            for obj in gc.get_objects():
+                if isinstance(obj, MainController) and hasattr(obj, 'actions_controller'):
+                    actions_widget = obj.actions_controller.actions_widget
+                    if actions_widget:
+                        run_button = actions_widget.findChild(QWidget, "runButton")
+                        if run_button:
+                            run_button.setEnabled(enabled)
+                    break
+        except Exception as e:
+            print(f"Error updating run button state: {e}")
     def can_process_files(self):
         """Check if current credits are sufficient for processing"""
         if not self.pixelcut_api:

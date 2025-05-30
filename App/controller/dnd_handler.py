@@ -41,7 +41,27 @@ class DndHandler(QObject):
         
         # Set last_directory to user's home directory if not set
         self.last_directory = os.path.expanduser("~")
+        
+        # Disable run button initially since we're in DnD mode
+        self._update_run_button_state(False)
     
+    def _update_run_button_state(self, enabled):
+        """Update run button enabled/disabled state"""
+        try:
+            # Get actions controller to update run button
+            from App.controller.main_controller import MainController
+            import gc
+            for obj in gc.get_objects():
+                if isinstance(obj, MainController) and hasattr(obj, 'actions_controller'):
+                    actions_widget = obj.actions_controller.actions_widget
+                    if actions_widget:
+                        run_button = actions_widget.findChild(QWidget, "runButton")
+                        if run_button:
+                            run_button.setEnabled(enabled)
+                    break
+        except Exception as e:
+            print(f"Error updating run button state: {e}")
+
     def setup_ui(self):
         """Setup the DnD area UI elements with icons"""
         # Setup DnD area icons only
