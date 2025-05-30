@@ -121,14 +121,16 @@ class MainController(QMainWindow):
                     if settings_btn:
                         settings_icon = qta.icon('fa6s.gear', color='white')
                         settings_btn.setIcon(settings_icon)
-            
-            # Load statistics widget using UI helper
+              # Load statistics widget using UI helper
             if statistics_container:
                 stats_widget = self.ui_helper.load_widget_safely(
                     self.BASE_DIR, "statistics.ui", statistics_container
                 )
                 if stats_widget:
-                    pass
+                    # Initialize statistics controller
+                    from App.controller.statistics import StatisticsController
+                    self.statistics_controller = StatisticsController(self.config_manager)
+                    self.statistics_controller.setup_ui_connections(stats_widget)
             
             # Load workspace widget using UI helper
             if workspace_container:

@@ -605,3 +605,114 @@ QDialog#SettingsDialog QLabel#validationIcon {
     margin: 0px;
     padding: 0px;
 }
+
+/* Statistics Widget Styling */
+QWidget#StatisticsWidget {
+    background-color: transparent;
+    border: none;
+    padding: 0px;
+    margin: 0px;
+}
+
+QWidget#StatisticsWidget QLabel#titleLabel {
+    background-color: transparent;
+    border: none;
+    font-weight: bold;
+    font-size: 14px;
+    color: #ff7f36;
+    padding: 5px 0px;
+    margin-bottom: 5px;
+}
+
+/* Statistics Frames */
+QWidget#StatisticsWidget QFrame#creditsFrame,
+QWidget#StatisticsWidget QFrame#expiryFrame {
+    background-color: rgba(138, 142, 145, 0.05);
+    border: 1px solid rgba(138, 142, 145, 0.2);
+    border-radius: 8px;
+    padding: 8px;
+    margin: 2px 0px;
+}
+
+QWidget#StatisticsWidget QFrame#creditsFrame:hover,
+QWidget#StatisticsWidget QFrame#expiryFrame:hover {
+    background-color: rgba(255, 127, 54, 0.08);
+    border: 1px solid rgba(255, 127, 54, 0.3);
+}
+
+/* Statistics Labels */
+QWidget#StatisticsWidget QLabel#creditsLabel,
+QWidget#StatisticsWidget QLabel#expiryLabel {
+    background-color: transparent;
+    border: none;
+    font-weight: bold;
+    font-size: 12px;
+    padding: 2px 0px;
+}
+
+QWidget#StatisticsWidget QLabel#creditsDetailLabel,
+QWidget#StatisticsWidget QLabel#expiryDetailLabel {
+    background-color: transparent;
+    border: none;
+    font-size: 10px;
+    color: rgba(138, 142, 145, 0.8);
+    padding: 2px 0px;
+    font-style: italic;
+}
+
+/* Statistics Progress Bars */
+QWidget#StatisticsWidget QProgressBar#creditsProgressBar,
+QWidget#StatisticsWidget QProgressBar#expiryProgressBar {
+    border: 1px solid rgba(138, 142, 145, 0.3);
+    border-radius: 6px;
+    background-color: rgba(138, 142, 145, 0.1);
+    text-align: center;
+    min-height: 18px;
+    max-height: 18px;
+    font-weight: bold;
+    font-size: 10px;
+}
+
+/* Credits Progress Bar - Dynamic coloring based on percentage */
+QWidget#StatisticsWidget QProgressBar#creditsProgressBar::chunk {
+    border-radius: 4px;
+    margin: 1px;
+}
+
+QWidget#StatisticsWidget QProgressBar#creditsProgressBar[progressLevel="high"]::chunk {
+    background-color: #28a745; /* Green for high credits */
+}
+
+QWidget#StatisticsWidget QProgressBar#creditsProgressBar[progressLevel="medium"]::chunk {
+    background-color: #ffc107; /* Yellow for medium credits */
+}
+
+QWidget#StatisticsWidget QProgressBar#creditsProgressBar[progressLevel="low"]::chunk {
+    background-color: #dc3545; /* Red for low credits */
+}
+
+QWidget#StatisticsWidget QProgressBar#creditsProgressBar[progressLevel="empty"]::chunk {
+    background-color: #6c757d; /* Gray for no credits */
+}
+
+/* Expiry Progress Bar - Dynamic coloring based on days remaining */
+QWidget#StatisticsWidget QProgressBar#expiryProgressBar::chunk {
+    border-radius: 4px;
+    margin: 1px;
+}
+
+QWidget#StatisticsWidget QProgressBar#expiryProgressBar[expiryLevel="safe"]::chunk {
+    background-color: #28a745; /* Green for plenty of time */
+}
+
+QWidget#StatisticsWidget QProgressBar#expiryProgressBar[expiryLevel="warning"]::chunk {
+    background-color: #ffc107; /* Yellow for moderate time */
+}
+
+QWidget#StatisticsWidget QProgressBar#expiryProgressBar[expiryLevel="urgent"]::chunk {
+    background-color: #dc3545; /* Red for little time */
+}
+
+QWidget#StatisticsWidget QProgressBar#expiryProgressBar[expiryLevel="expired"]::chunk {
+    background-color: #6c757d; /* Gray for expired */
+}

@@ -51,3 +51,29 @@ class ConfigManager:
         """Get the full path to the application icon"""
         icon_filename = self.get("app_icon", "pixelcat.ico")
         return self.base_dir / "App" / "resource" / "icon" / icon_filename
+    
+    def update_pixelcut_credits(self, credits_data):
+        """Update pixelcut credits data in configuration"""
+        try:
+            self.set("pixelcut_credits", credits_data)
+            return self.save_config()
+        except Exception as e:
+            print(f"Error updating pixelcut credits: {e}")
+            return False
+    
+    def get_pixelcut_credits(self):
+        """Get pixelcut credits data from configuration"""
+        return self.get("pixelcut_credits", {
+            "creditsRemaining": 0,
+            "credits_remaining": 0,
+            "periods": [
+                {
+                    "credits": 0,
+                    "creditsRemaining": 0,
+                    "creditsUsed": 0,
+                    "periodStart": "0",
+                    "periodEnd": "0",
+                    "gracePeriodEnd": "0"
+                }
+            ]
+        })
