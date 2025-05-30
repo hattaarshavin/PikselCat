@@ -14,14 +14,27 @@ class ActionsController(QObject):
         self.actions_widget = actions_widget
         self.status_helper = status_helper
         self.output_path = ""  # Store selected output path
+        # Store references for settings dialog
+        self.config_manager = None
         self.setup_ui()
         self.connect_signals()
         # Set initial status
         self.status_helper.show_ready("System ready")
     
+    def set_config_manager(self, config_manager):
+        """Set config manager reference for settings dialog"""
+        self.config_manager = config_manager
+    
     def setup_ui(self):
         """Setup the UI elements with icons"""
         if self.actions_widget:
+            # Find the settings button
+            settings_button = self.actions_widget.findChild(QWidget, "settingsButton")
+            if settings_button:
+                # Add gear icon using QtAwesome fa6s
+                gear_icon = qta.icon('fa6s.gear', color='white')
+                settings_button.setIcon(gear_icon)
+            
             # Find the run button
             run_button = self.actions_widget.findChild(QWidget, "runButton")
             if run_button:
@@ -46,6 +59,11 @@ class ActionsController(QObject):
     def connect_signals(self):
         """Connect button signals to slots"""
         if self.actions_widget:
+            # Connect settings button
+            settings_button = self.actions_widget.findChild(QWidget, "settingsButton")
+            if settings_button:
+                settings_button.clicked.connect(self.on_settings_clicked)
+            
             run_button = self.actions_widget.findChild(QWidget, "runButton")
             if run_button:
                 run_button.clicked.connect(self.on_run_clicked)
@@ -58,6 +76,51 @@ class ActionsController(QObject):
             output_button = self.actions_widget.findChild(QWidget, "outputDestinationButton")
             if output_button:
                 output_button.clicked.connect(self.on_output_destination_clicked)
+    
+    def on_settings_clicked(self):
+        """Handle settings button click"""
+        try:
+            # Try to get config manager if not set
+            if not self.config_manager:
+                config_manager = self.get_config_manager()
+                if not config_manager:
+                    self.status_helper.show_error("Configuration manager not available")
+                    return
+            else:
+                config_manager = self.config_manager
+            
+            from App.controller.settings import SettingsController
+            
+            # Show settings dialog
+            settings_controller = SettingsController.show_settings_dialog(
+                config_manager, 
+                self.status_helper, 
+                self.actions_widget
+            )
+            
+            if settings_controller:
+                print("Settings dialog opened successfully")
+            else:
+                self.status_helper.show_error("Failed to open settings dialog")
+                
+        except ImportError as e:
+            print(f"Import error: {e}")
+            self.status_helper.show_error("Settings module not found")
+        except Exception as e:
+            print(f"Error opening settings dialog: {e}")
+            self.status_helper.show_error(f"Settings error: {str(e)}")
+    
+    def get_config_manager(self):
+        """Try to get config manager from main controller"""
+        try:
+            from App.controller.main_controller import MainController
+            import weakref
+            for obj in weakref.get_objects():
+                if isinstance(obj, MainController) and hasattr(obj, 'config_manager'):
+                    return obj.config_manager
+        except:
+            pass
+        return None
     
     def on_run_clicked(self):
         """Handle run button click with credit checking"""

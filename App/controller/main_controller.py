@@ -111,6 +111,9 @@ class MainController(QMainWindow):
                     from App.controller.actions import ActionsController
                     self.actions_controller = ActionsController(actions_widget, self.status_helper)
                     
+                    # Pass config_manager to actions controller
+                    self.actions_controller.set_config_manager(self.config_manager)
+                    
                     # Setup settings button icon
                     from PySide6.QtWidgets import QPushButton
                     import qtawesome as qta
