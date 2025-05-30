@@ -499,3 +499,109 @@ QPushButton#outputDestinationButton:disabled {
     color: #888888;
     border: 2px solid transparent;
 }
+
+/* Settings Dialog Styling */
+QDialog#SettingsDialog {
+    background-color: #2b2b2b;
+    border: 2px solid rgba(255, 127, 54, 0.3);
+    border-radius: 15px;
+    color: white;
+}
+
+QDialog#SettingsDialog QLabel#titleLabel {
+    background-color: transparent;
+    border: none;
+    font-weight: bold;
+    font-size: 16px;
+    color: #ff7f36;
+    margin-bottom: 10px;
+}
+
+QDialog#SettingsDialog QLabel#descriptionLabel {
+    background-color: transparent;
+    border: none;
+    font-size: 12px;
+    color: rgba(138, 142, 145, 0.8);
+    margin-bottom: 5px;
+}
+
+QDialog#SettingsDialog QLabel#apiKeyLabel {
+    background-color: transparent;
+    border: none;
+    font-weight: bold;
+    font-size: 12px;
+    color: white;
+}
+
+QDialog#SettingsDialog QLineEdit#apiKeyLineEdit {
+    border: 2px solid rgba(138, 142, 145, 0.3);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    background-color: rgba(138, 142, 145, 0.05);
+    color: white;
+}
+
+QDialog#SettingsDialog QLineEdit#apiKeyLineEdit:focus {
+    border: 2px solid #ff7f36;
+    outline: none;
+}
+
+QDialog#SettingsDialog QLineEdit#apiKeyLineEdit[validationState="valid"] {
+    border: 2px solid #28a745;
+}
+
+QDialog#SettingsDialog QLineEdit#apiKeyLineEdit[validationState="invalid"] {
+    border: 2px solid #dc3545;
+}
+
+QDialog#SettingsDialog QLineEdit#apiKeyLineEdit[validationState="validating"] {
+    border: 2px solid #ffc107;
+}
+
+QDialog#SettingsDialog QLabel#statusLabel {
+    background-color: transparent;
+    border: none;
+    font-size: 11px;
+    font-style: italic;
+    color: rgba(138, 142, 145, 0.8);
+    margin-top: 5px;
+}
+
+/* Settings Dialog Close Button - Rounded */
+QDialog#SettingsDialog QPushButton#closeButton {
+    background-color: #6c757d;
+    color: white;
+    border: 2px solid transparent;
+    padding: 8px 16px;
+    border-radius: 18px;
+    font-weight: bold;
+    font-size: 12px;
+    outline: none;
+    border-style: solid;
+    min-width: 60px;
+    min-height: 20px;
+}
+
+QDialog#SettingsDialog QPushButton#closeButton:hover {
+    background-color: #5a6268;
+}
+
+QDialog#SettingsDialog QPushButton#closeButton:pressed {
+    background-color: #495057;
+}
+
+QDialog#SettingsDialog QPushButton#closeButton:disabled {
+    background-color: rgba(138, 142, 145, 0.08);
+    color: #888888;
+    border: 2px solid transparent;
+}
+
+/* Settings Dialog Validation Icon */
+QDialog#SettingsDialog QLabel#validationIcon {
+    background-color: transparent;
+    border: none;
+    margin: 0px;
+    padding: 0px;
+}

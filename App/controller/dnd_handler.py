@@ -20,6 +20,14 @@ class DndHandler(QObject):
         self.progress_dialog = None
         self.file_loader_worker = None
         
+        # Initialize PixelcutApiHelper for validation (create when needed)
+        self.pixelcut_api = None
+        
+        # Rate limiting for API validation
+        self.last_api_check_time = 0
+        self.api_check_cache = {}  # Cache validation results temporarily
+        self.cache_duration = 30000  # 30 seconds cache
+        
         # Get the stacked widget for switching between DnD and Work Area
         self.stacked_widget = workspace_widget.findChild(QStackedWidget, "stackedWidget")
         self.setup_connections(open_files_btn, open_folder_btn)
@@ -236,6 +244,10 @@ class DndHandler(QObject):
     
     def start_file_loading(self, files):
         """Start threaded file loading with progress dialog"""
+        # Check API key before processing
+        if not self.check_api_key():
+            return
+        
         from App.gui.dialogs.progress_dialog import ProgressDialog
         from App.helpers.file_loader_worker import FileLoaderWorker
         
@@ -254,6 +266,53 @@ class DndHandler(QObject):
         self.file_loader_worker.start()
         
         self.status_helper.show_status("Loading image files...", self.status_helper.PRIORITY_NORMAL)
+    
+    def check_api_key(self):
+        """Check if API key is configured and valid, show settings if not"""
+        if not hasattr(self, 'work_handler') or not self.work_handler:
+            return True  # Skip check if no work handler
+        
+        config_manager = getattr(self.work_handler, 'config_manager', None)
+        if not config_manager:
+            return True  # Skip check if no config manager
+        
+        # Initialize PixelcutApiHelper if not exists
+        if not self.pixelcut_api:
+            from App.helpers.pixelcut_api import PixelcutApiHelper
+            self.pixelcut_api = PixelcutApiHelper(config_manager)
+        
+        # Check if API key is empty or not configured
+        api_key = config_manager.get("api_headers", {}).get("X-API-KEY", "").strip()
+        
+        if not api_key:
+            # Show settings dialog
+            self.status_helper.show_status("API key required - Opening settings...", self.status_helper.PRIORITY_HIGH)
+            
+            from App.controller.settings import SettingsController
+            SettingsController.show_settings_dialog(config_manager, self.status_helper, self.dnd_widget)
+            
+            # Check again after settings dialog
+            api_key = config_manager.get("api_headers", {}).get("X-API-KEY", "").strip()
+            if not api_key:
+                self.status_helper.show_status("API key required to process files", self.status_helper.PRIORITY_HIGH)
+                return False
+        else:
+            # API key ada, tapi cek apakah masih valid menggunakan PixelcutApiHelper
+            if not self.pixelcut_api.quick_validate_api_key(api_key):
+                # API key invalid, clear dan show settings
+                config_manager.save_api_key("")
+                self.status_helper.show_status("API key invalid - Opening settings...", self.status_helper.PRIORITY_HIGH)
+                
+                from App.controller.settings import SettingsController
+                SettingsController.show_settings_dialog(config_manager, self.status_helper, self.dnd_widget)
+                
+                # Check again after settings dialog
+                api_key = config_manager.get("api_headers", {}).get("X-API-KEY", "").strip()
+                if not api_key:
+                    self.status_helper.show_status("Valid API key required to process files", self.status_helper.PRIORITY_HIGH)
+                    return False
+        
+        return True
     
     def on_progress_updated(self, progress, status):
         """Handle progress updates from worker thread"""

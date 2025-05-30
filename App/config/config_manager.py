@@ -17,6 +17,36 @@ class ConfigManager:
         """Get configuration value by key"""
         return self.config.get(key, default)
     
+    def set(self, key, value):
+        """Set configuration value by key"""
+        self.config[key] = value
+    
+    def set_nested(self, parent_key, child_key, value):
+        """Set nested configuration value"""
+        if parent_key not in self.config:
+            self.config[parent_key] = {}
+        self.config[parent_key][child_key] = value
+    
+    def save_config(self):
+        """Save current configuration to JSON file"""
+        try:
+            config_path = self.base_dir / "App" / "config" / "app_config.json"
+            with open(config_path, 'w') as f:
+                json.dump(self.config, f, indent=4)
+            return True
+        except Exception as e:
+            print(f"Error saving config: {e}")
+            return False
+    
+    def save_api_key(self, api_key):
+        """Save API key to configuration"""
+        try:
+            self.set_nested("api_headers", "X-API-KEY", api_key.strip())
+            return self.save_config()
+        except Exception as e:
+            print(f"Error saving API key: {e}")
+            return False
+    
     def get_icon_path(self):
         """Get the full path to the application icon"""
         icon_filename = self.get("app_icon", "pixelcat.ico")
