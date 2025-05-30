@@ -102,6 +102,10 @@ class ProgressDialog(QDialog):
         # Emit cancel signal
         self.cancel_requested.emit()
     
+    def on_cancel_completed(self):
+        """Handle when cancellation is completed - close dialog"""
+        self.close()
+    
     def enable_cancel(self):
         """Re-enable the cancel button"""
         self.cancel_button.setEnabled(True)

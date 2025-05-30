@@ -15,12 +15,9 @@ class FileLoaderWorker(QThread):
         self.cancelled = False
         self.valid_files = []
         
-        # Supported image extensions by Pillow
+        # Supported image extensions - common formats only
         self.supported_extensions = {
-            '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif', 
-            '.webp', '.ico', '.ppm', '.pgm', '.pbm', '.xbm', '.pcx',
-            '.tga', '.sgi', '.eps', '.im', '.msp', '.dds', '.j2k', 
-            '.jp2', '.jpx', '.jpc'
+            '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.webp'
         }
         
     def run(self):

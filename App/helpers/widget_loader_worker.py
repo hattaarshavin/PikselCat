@@ -85,3 +85,5 @@ class WidgetCreationManager(QObject):
         """Cancel the widget loading operation"""
         self.cancelled = True
         self.timer.stop()
+        # Emit cancelled signal immediately for instant feedback
+        self.loading_cancelled.emit()

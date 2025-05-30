@@ -167,11 +167,9 @@ class DndHandler(QObject):
     
     def open_files(self):
         """Open file dialog to select multiple image files"""
-        # Create image file filter for supported formats
+        # Create image file filter for common formats only
         image_filter = (
-            "Image Files (*.jpg *.jpeg *.png *.gif *.bmp *.tiff *.tif *.webp *.ico "
-            "*.ppm *.pgm *.pbm *.xbm *.pcx *.tga *.sgi *.eps *.im *.msp *.dds "
-            "*.j2k *.jp2 *.jpx *.jpc);;All Files (*.*)"
+            "Image Files (*.jpg *.jpeg *.png *.tiff *.tif *.webp);;All Files (*.*)"
         )
         
         files, _ = QFileDialog.getOpenFileNames(
