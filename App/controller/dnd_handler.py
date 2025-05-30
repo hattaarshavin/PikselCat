@@ -82,6 +82,9 @@ class DndHandler(QObject):
         if self.stacked_widget:
             self.stacked_widget.setCurrentIndex(0)        # Set initial status
         self.status_helper.show_ready("Drag & drop image files or select files/folder")
+        
+        # Set last_directory to user's home directory if not set
+        self.last_directory = os.path.expanduser("~")
     
     def setup_ui(self):
         """Setup the DnD area UI elements with icons"""
@@ -175,7 +178,7 @@ class DndHandler(QObject):
         files, _ = QFileDialog.getOpenFileNames(
             self.dnd_widget,
             "Select Image Files",
-            self.last_directory,
+            self.last_directory if self.last_directory else os.path.expanduser("~"),
             image_filter
         )
         if files:
@@ -187,7 +190,7 @@ class DndHandler(QObject):
         folder = QFileDialog.getExistingDirectory(
             self.dnd_widget,
             "Select Folder",
-            self.last_directory
+            self.last_directory if self.last_directory else os.path.expanduser("~")
         )
         if folder:
             # Update last directory to the selected folder

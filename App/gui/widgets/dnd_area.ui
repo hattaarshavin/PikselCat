@@ -15,7 +15,8 @@
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
-  </property>  <layout class="QVBoxLayout" name="verticalLayout">
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing">
     <number>5</number>
    </property>
@@ -44,7 +45,7 @@
      </property>
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
-     </property>     
+     </property>
      <layout class="QVBoxLayout" name="dndLayout">
       <property name="spacing">
        <number>0</number>
@@ -128,19 +129,6 @@
         <string>Open Folder</string>
        </property>
       </widget>
-     </item>
-     <item>
-      <spacer name="rightSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
      </item>
     </layout>
    </item>

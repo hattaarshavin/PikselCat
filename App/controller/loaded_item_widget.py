@@ -1,5 +1,5 @@
-from PySide6.QtWidgets import QWidget, QLabel, QSizePolicy, QHBoxLayout, QVBoxLayout, QFrame
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QWidget, QLabel, QSizePolicy, QHBoxLayout, QVBoxLayout, QFrame, QPushButton
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap
 import qtawesome as qta
 from PIL import Image, ImageQt
@@ -7,6 +7,8 @@ import os
 
 class LoadedItemWidget(QWidget):
     """Widget representing a single loaded file item"""
+    remove_requested = Signal(str)  # Emit file path when removal is requested
+    
     def __init__(self, file_path: str, parent=None):
         super().__init__(parent)
         self.file_path = file_path
@@ -75,7 +77,24 @@ class LoadedItemWidget(QWidget):
         # Add widgets to main layout
         main_layout.addWidget(self.file_icon_label)
         main_layout.addLayout(text_layout)
-          # Add the frame to the main widget layout
+        
+        # Add close button
+        self.close_button = QPushButton()
+        self.close_button.setObjectName("itemCloseButton")
+        self.close_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.close_button.setMinimumSize(20, 20)
+        self.close_button.setMaximumSize(20, 20)
+        self.close_button.setToolTip("Remove this file")
+        
+        # Add close icon
+        import qtawesome as qta
+        close_icon = qta.icon('fa6s.xmark', color='#dc3545')
+        self.close_button.setIcon(close_icon)
+        
+        self.close_button.clicked.connect(self.on_close_clicked)
+        main_layout.addWidget(self.close_button)
+        
+        # Add the frame to the main widget layout
         main_widget_layout.addWidget(self.item_frame)
     
     def populate_data(self):
@@ -190,3 +209,7 @@ class LoadedItemWidget(QWidget):
     def get_file_path(self):
         """Get the file path"""
         return self.file_path
+    
+    def on_close_clicked(self):
+        """Handle close button click"""
+        self.remove_requested.emit(self.file_path)

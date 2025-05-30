@@ -106,7 +106,14 @@ class MainController(QMainWindow):
                 if actions_widget:                    
                     from App.controller.actions import ActionsController
                     self.actions_controller = ActionsController(actions_widget, self.status_helper)
-                    # No need to connect signals - StatusHelper is used directly
+                    
+                    # Setup settings button icon
+                    from PySide6.QtWidgets import QPushButton
+                    import qtawesome as qta
+                    settings_btn = actions_widget.findChild(QPushButton, "settingsButton")
+                    if settings_btn:
+                        settings_icon = qta.icon('fa6s.gear', color='white')
+                        settings_btn.setIcon(settings_icon)
             
             # Load statistics widget using UI helper
             if statistics_container:

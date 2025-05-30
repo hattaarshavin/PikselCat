@@ -98,6 +98,9 @@ class WorkHandler(QObject):
     
     def on_widget_created(self, widget):
         """Handle individual widget creation"""
+        # Connect the remove signal
+        widget.remove_requested.connect(self.remove_file)
+        
         # Add widget to layout
         scroll_area = self.work_area_widget.findChild(QWidget, "scrollAreaWidgetContents")
         if scroll_area:
@@ -111,6 +114,36 @@ class WorkHandler(QObject):
                 
                 self.file_widgets.append(widget)
                 file_list_layout.addWidget(widget)
+    
+    def remove_file(self, file_path):
+        """Remove a specific file from the loaded files"""
+        if file_path in self.loaded_files:
+            # Remove from loaded files list
+            self.loaded_files.remove(file_path)
+            
+            # Find and remove the corresponding widget
+            widget_to_remove = None
+            for widget in self.file_widgets:
+                if widget.get_file_path() == file_path:
+                    widget_to_remove = widget
+                    break
+            
+            if widget_to_remove:
+                # Remove from layout and delete widget
+                self.file_widgets.remove(widget_to_remove)
+                widget_to_remove.setParent(None)
+                widget_to_remove.deleteLater()
+                
+                # Update header
+                self.update_work_area_header()
+                
+                # If no files left, switch back to DnD area
+                if not self.loaded_files:
+                    self.switch_to_dnd_area()
+                    self.files_cleared.emit()
+                    self.status_helper.show_ready("Ready for new files")
+                else:
+                    self.status_helper.show_status(f"Removed file. {len(self.loaded_files)} files remaining.", self.status_helper.PRIORITY_NORMAL)
     
     def on_widget_creation_completed(self, widgets):
         """Handle completion of widget creation"""
