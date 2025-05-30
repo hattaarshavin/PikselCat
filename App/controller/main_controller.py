@@ -8,7 +8,11 @@ class MainController(QMainWindow):
     def __init__(self, base_dir):
         super().__init__()
         self.BASE_DIR = base_dir
-          # Import dependencies
+        
+        # Enable drag & drop on main window
+        self.setAcceptDrops(True)
+        
+        # Import dependencies
         from App.config.config_manager import ConfigManager
         from App.helpers._ui_helper import UIHelper
         from App.helpers._status_helper import StatusHelper
@@ -154,12 +158,13 @@ class MainController(QMainWindow):
             open_folder_btn = dnd_widget.findChild(QPushButton, "openFolderButton")
             
             if open_files_btn and open_folder_btn:
-                # Create work handler first
+                # Create work handler first with config_manager
                 from App.controller.work_handler import WorkHandler
                 self.work_handler = WorkHandler(
                     workspace_widget, 
                     work_area_widget, 
-                    self.status_helper
+                    self.status_helper,
+                    self.config_manager
                 )
                 
                 # Create DnD handler and set work handler reference
@@ -177,11 +182,11 @@ class MainController(QMainWindow):
                 # Connect work handler signals if needed
                 self.work_handler.files_cleared.connect(lambda: self.dnd_handler.files_loaded.emit([]))
                 
-                # No need to connect signals - StatusHelper is used directly
                 self.status_helper.show_ready("Drag & drop ready")
             else:
                 print("Error: Could not find DnD buttons")
                 self.status_helper.show_error("Could not find DnD buttons")
+            
         except Exception as e:
             print(f"Error initializing DnD handler: {e}")
             self.status_helper.show_error(f"DnD handler initialization failed: {e}")

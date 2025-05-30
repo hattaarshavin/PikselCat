@@ -338,6 +338,7 @@ class WorkHandler(QObject):
         """Open WhatsApp group using URL from config"""
         if self.config_manager:
             whatsapp_url = self.config_manager.get("whatsapp")
+            
             if whatsapp_url:
                 success = UrlHelper.open_whatsapp(whatsapp_url, self.work_area_widget)
                 if success:

@@ -3,58 +3,6 @@ from PySide6.QtCore import QObject, Signal, Qt
 from PySide6.QtGui import QDragEnterEvent, QDropEvent, QDragMoveEvent, QDragLeaveEvent
 import qtawesome as qta
 import os
-import qtawesome as qta
-import os
-
-class DragDropWidget(QWidget):
-    """Custom widget that handles drag and drop events properly"""
-    files_dropped = Signal(list)
-    drag_entered = Signal()
-    drag_left = Signal()
-    
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setAcceptDrops(True)
-        # Make widget transparent to mouse events except drag/drop
-    
-    def dragEnterEvent(self, event: QDragEnterEvent):
-        if event.mimeData().hasUrls():
-            event.acceptProposedAction()
-            self.drag_entered.emit()
-        else:
-            event.ignore()
-    
-    def dragMoveEvent(self, event: QDragMoveEvent):
-        if event.mimeData().hasUrls():
-            event.acceptProposedAction()
-        else:
-            event.ignore()
-    
-    def dragLeaveEvent(self, event: QDragLeaveEvent):
-        self.drag_left.emit()
-    
-    def dropEvent(self, event: QDropEvent):
-        if event.mimeData().hasUrls():
-            files = []
-            for url in event.mimeData().urls():
-                file_path = url.toLocalFile()
-                if os.path.isfile(file_path):
-                    files.append(file_path)
-                elif os.path.isdir(file_path):
-                    # If it's a directory, get all files in it
-                    for root, dirs, filenames in os.walk(file_path):
-                        for filename in filenames:
-                            files.append(os.path.join(root, filename))
-            
-            if files:
-                self.files_dropped.emit(files)
-                event.acceptProposedAction()
-            else:
-                event.ignore()
-        else:
-            event.ignore()
-        
-        self.drag_left.emit()
 
 class DndHandler(QObject):
     # Signal emitted when files are loaded
@@ -80,7 +28,7 @@ class DndHandler(QObject):
         
         # Initially show DnD area (index 0)
         if self.stacked_widget:
-            self.stacked_widget.setCurrentIndex(0)        # Set initial status
+            self.stacked_widget.setCurrentIndex(0)
         self.status_helper.show_ready("Drag & drop image files or select files/folder")
         
         # Set last_directory to user's home directory if not set
@@ -107,48 +55,129 @@ class DndHandler(QObject):
         open_folder_btn.clicked.connect(self.open_folder)
     
     def setup_drag_drop(self):
-        """Setup drag and drop functionality using proper widget overlay"""
+        """Setup drag and drop functionality"""
         if self.dnd_widget:
-            # Find the dndFrame within the dnd_widget
-            from PySide6.QtWidgets import QVBoxLayout, QFrame
+            # Find all relevant widgets in hierarchy
+            from PySide6.QtWidgets import QFrame
             
+            # Enable drag & drop on workspace_widget (top level)
+            self.workspace_widget.setAcceptDrops(True)
+            
+            # Enable on stacked widget
+            if self.stacked_widget:
+                self.stacked_widget.setAcceptDrops(True)
+            
+            # Find dnd container
+            dnd_container = self.workspace_widget.findChild(QWidget, "dndContainer")
+            if dnd_container:
+                dnd_container.setAcceptDrops(True)
+            
+            # Enable on dnd_widget itself
+            self.dnd_widget.setAcceptDrops(True)
+            
+            # Find dnd_frame
             dnd_frame = self.dnd_widget.findChild(QFrame, "dndFrame")
             if dnd_frame:
-                # Create overlay widget for drag and drop that covers only the frame
-                self.drag_drop_overlay = DragDropWidget(dnd_frame)
-                self.drag_drop_overlay.setGeometry(dnd_frame.rect())
-                self.drag_drop_overlay.setAttribute(Qt.WA_TransparentForMouseEvents, False)
-                self.drag_drop_overlay.show()
-                
-                # Connect signals
-                self.drag_drop_overlay.files_dropped.connect(self.load_files)
-                self.drag_drop_overlay.drag_entered.connect(self.on_drag_enter)
-                self.drag_drop_overlay.drag_left.connect(self.on_drag_leave)
-                
-                # Ensure overlay resizes with parent frame
-                def resize_overlay():
-                    if hasattr(self, 'drag_drop_overlay') and dnd_frame:
-                        self.drag_drop_overlay.setGeometry(dnd_frame.rect())
-                
-                original_resize = dnd_frame.resizeEvent
-                def new_resize_event(event):
-                    if original_resize:
-                        original_resize(event)
-                    resize_overlay()
-                dnd_frame.resizeEvent = new_resize_event
                 self.dnd_frame = dnd_frame
+                dnd_frame.setAcceptDrops(True)
+            
+            # Make child widgets properly handle drag events
+            self._make_children_transparent(self.dnd_widget)
+            
+            # Override events on relevant widgets
+            main_window = self.workspace_widget
+            while main_window.parent():
+                main_window = main_window.parent()
+            
+            self._override_drag_events(main_window)
+            self._override_drag_events(self.workspace_widget)
+            self._override_drag_events(self.stacked_widget)
+            if dnd_container:
+                self._override_drag_events(dnd_container)
+            self._override_drag_events(self.dnd_widget)
+            if dnd_frame:
+                self._override_drag_events(dnd_frame)
+
+    def _make_children_transparent(self, parent_widget):
+        """Make child widgets properly handle drag events"""
+        for child in parent_widget.findChildren(QWidget):
+            if child != parent_widget and child != self.dnd_frame:
+                if isinstance(child, QLabel):
+                    child.setAttribute(Qt.WA_TransparentForMouseEvents, False)
+                    child.setAcceptDrops(True)
+                elif isinstance(child, QPushButton):
+                    child.setAttribute(Qt.WA_TransparentForMouseEvents, False)
+                    child.setAcceptDrops(True)
+                else:
+                    child.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+                    child.setAcceptDrops(False)
+
+    def _override_drag_events(self, widget):
+        """Override drag events on a specific widget"""
+        if widget:
+            # Store original methods first
+            if not hasattr(widget, '_original_drag_enter'):
+                widget._original_drag_enter = widget.dragEnterEvent
+                widget._original_drag_move = widget.dragMoveEvent
+                widget._original_drag_leave = widget.dragLeaveEvent
+                widget._original_drop = widget.dropEvent
+            
+            widget.dragEnterEvent = self.new_drag_enter
+            widget.dragMoveEvent = self.new_drag_move
+            widget.dragLeaveEvent = self.new_drag_leave
+            widget.dropEvent = self.new_drop
+
+    def new_drag_enter(self, event):
+        """Handle drag enter event"""
+        if event.mimeData().hasUrls():
+            event.setDropAction(Qt.CopyAction)
+            event.accept()
+            self.on_drag_enter()
+        else:
+            event.ignore()
+
+    def new_drag_move(self, event):
+        """Handle drag move event"""
+        if event.mimeData().hasUrls():
+            event.setDropAction(Qt.CopyAction)
+            event.accept()
+        else:
+            event.ignore()
+
+    def new_drag_leave(self, event):
+        """Handle drag leave event"""
+        self.on_drag_leave()
+
+    def new_drop(self, event):
+        """Handle drop event"""
+        if event.mimeData().hasUrls():
+            files = []
+            urls = event.mimeData().urls()
+            
+            for url in urls:
+                file_path = url.toLocalFile()
+                if os.path.isfile(file_path):
+                    files.append(file_path)
+                elif os.path.isdir(file_path):
+                    for root, dirs, filenames in os.walk(file_path):
+                        for filename in filenames:
+                            files.append(os.path.join(root, filename))
+            
+            if files:
+                self.load_files(files)
+                event.accept()
             else:
-                print("Warning: dndFrame not found in dnd_widget")
+                event.ignore()
+        else:
+            event.ignore()
+        
+        self.on_drag_leave()
     
     def on_drag_enter(self):
         """Handle drag enter visual feedback"""
         self.status_helper.show_status("Files detected - Drop to load files", self.status_helper.PRIORITY_NORMAL)
         
-        if hasattr(self, 'drag_drop_overlay'):
-            self.drag_drop_overlay.setProperty("dragHover", True)
-            self.drag_drop_overlay.style().unpolish(self.drag_drop_overlay)
-            self.drag_drop_overlay.style().polish(self.drag_drop_overlay)
-        # Also apply to the dnd frame for visual feedback
+        # Apply to the dnd frame for visual feedback
         if hasattr(self, 'dnd_frame') and self.dnd_frame:
             self.dnd_frame.setProperty("dragHover", True)
             self.dnd_frame.style().unpolish(self.dnd_frame)
@@ -156,13 +185,7 @@ class DndHandler(QObject):
     
     def on_drag_leave(self):
         """Handle drag leave visual feedback"""
-        # Remove status message on drag leave - let it return to previous state naturally
-        
-        if hasattr(self, 'drag_drop_overlay'):
-            self.drag_drop_overlay.setProperty("dragHover", False)
-            self.drag_drop_overlay.style().unpolish(self.drag_drop_overlay)
-            self.drag_drop_overlay.style().polish(self.drag_drop_overlay)
-        # Also remove from the dnd frame
+        # Remove from the dnd frame
         if hasattr(self, 'dnd_frame') and self.dnd_frame:
             self.dnd_frame.setProperty("dragHover", False)
             self.dnd_frame.style().unpolish(self.dnd_frame)
