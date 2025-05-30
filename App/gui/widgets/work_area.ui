@@ -79,8 +79,7 @@
     <widget class="QScrollArea" name="fileScrollArea">
      <property name="widgetResizable">
       <bool>true</bool>
-     </property>
-     <widget class="QWidget" name="scrollAreaWidgetContents">
+     </property>     <widget class="QWidget" name="scrollAreaWidgetContents">
       <property name="geometry">
        <rect>
         <x>0</x>
@@ -89,17 +88,32 @@
         <height>230</height>
        </rect>
       </property>
-      <layout class="QVBoxLayout" name="fileListLayout">       <item>
-        <widget class="QLabel" name="fileListLabel">
-         <property name="text">
-          <string>No files loaded</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignLeft|Qt::AlignTop</set>
-         </property>
-        </widget>
-       </item>
-      </layout>     </widget>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>      
+      <layout class="QVBoxLayout" name="fileListLayout">
+       <property name="spacing">
+        <number>2</number>
+       </property>
+       <property name="leftMargin">
+        <number>5</number>
+       </property>
+       <property name="topMargin">
+        <number>5</number>
+       </property>
+       <property name="rightMargin">
+        <number>5</number>
+       </property>
+       <property name="bottomMargin">
+        <number>5</number>
+       </property>
+       <property name="sizeConstraint">
+        <enum>QLayout::SetDefaultConstraint</enum>
+       </property>
+      </layout></widget>
     </widget>
    </item>
   </layout>
