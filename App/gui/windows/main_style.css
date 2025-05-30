@@ -159,7 +159,7 @@ QWidget#WorkAreaWidget QComboBox#actionComboBox QAbstractItemView::item:selected
     outline: none;
 }
 
-/* Work Area Buttons - Clear button only */
+/* Work Area Buttons - Clear button and WhatsApp button */
 QWidget#WorkAreaWidget {
     margin: 0px;
     padding: 0px;
@@ -185,6 +185,29 @@ QWidget#WorkAreaWidget QPushButton#clearFilesButton:hover {
 
 QWidget#WorkAreaWidget QPushButton#clearFilesButton:pressed {
     background-color: #bd2130;
+}
+
+QWidget#WorkAreaWidget QPushButton#whatsappButton {
+    background-color: #25d366;
+    color: rgb(38, 51, 66);
+    border: 2px solid transparent;
+    padding: 6px;
+    border-radius: 15px;
+    font-weight: bold;
+    font-size: 12px;
+    min-width: 30px;
+    max-width: 30px;
+    min-height: 16px;
+    outline: none;
+    border-style: solid;
+}
+
+QWidget#WorkAreaWidget QPushButton#whatsappButton:hover {
+    background-color: #20c65a;
+}
+
+QWidget#WorkAreaWidget QPushButton#whatsappButton:pressed {
+    background-color: #1bb352;
 }
 
 /* Run Button Styles */

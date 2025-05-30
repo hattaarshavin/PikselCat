@@ -3,17 +3,19 @@ from PySide6.QtCore import QObject, Signal, Qt
 import qtawesome as qta
 import os
 from .loaded_item_widget import LoadedItemWidget
+from App.helpers._url_helper import UrlHelper
 
 class WorkHandler(QObject):
     """Handler for work area operations and file processing"""
     # Signals for communication with other components
     files_cleared = Signal()
     
-    def __init__(self, workspace_widget: QWidget, work_area_widget: QWidget, status_helper):
+    def __init__(self, workspace_widget: QWidget, work_area_widget: QWidget, status_helper, config_manager=None):
         super().__init__()
         self.workspace_widget = workspace_widget
         self.work_area_widget = work_area_widget
         self.status_helper = status_helper
+        self.config_manager = config_manager
         self.loaded_files = []
         self.file_widgets = []  # Store references to LoadedItemWidget instances
         
@@ -31,6 +33,12 @@ class WorkHandler(QObject):
             if clear_btn:                
                 clear_icon = qta.icon('fa6s.xmark', color='white')
                 clear_btn.setIcon(clear_icon)
+            
+            # Find and set icon for WhatsApp button
+            whatsapp_btn = self.work_area_widget.findChild(QPushButton, "whatsappButton")
+            if whatsapp_btn:
+                whatsapp_icon = qta.icon('fa6b.whatsapp', color='white')
+                whatsapp_btn.setIcon(whatsapp_icon)
             
             # Set icons for cost information labels
             estimated_cost_icon = self.work_area_widget.findChild(QLabel, "estimatedCostIcon")
@@ -52,7 +60,12 @@ class WorkHandler(QObject):
             clear_btn = self.work_area_widget.findChild(QPushButton, "clearFilesButton")
             if clear_btn:
                 clear_btn.clicked.connect(self.clear_files)
-                  # Connect combobox change to update cost calculation
+            
+            # Connect WhatsApp button
+            whatsapp_btn = self.work_area_widget.findChild(QPushButton, "whatsappButton")
+            if whatsapp_btn:
+                whatsapp_btn.clicked.connect(self.open_whatsapp)
+                   # Connect combobox change to update cost calculation
             action_combo = self.work_area_widget.findChild(QComboBox, "actionComboBox")
             if action_combo:
                 action_combo.currentTextChanged.connect(self.update_cost_calculation)
@@ -320,3 +333,18 @@ class WorkHandler(QObject):
             else:
                 # No widgets created yet
                 cost_label.setText("Estimated cost: 0 Credit for 0 files")
+    
+    def open_whatsapp(self):
+        """Open WhatsApp group using URL from config"""
+        if self.config_manager:
+            whatsapp_url = self.config_manager.get("whatsapp")
+            if whatsapp_url:
+                success = UrlHelper.open_whatsapp(whatsapp_url, self.work_area_widget)
+                if success:
+                    self.status_helper.show_status("Opening WhatsApp group...", self.status_helper.PRIORITY_NORMAL)
+                else:
+                    self.status_helper.show_status("Failed to open WhatsApp link", self.status_helper.PRIORITY_HIGH)
+            else:
+                self.status_helper.show_status("WhatsApp URL not configured", self.status_helper.PRIORITY_HIGH)
+        else:
+            self.status_helper.show_status("Configuration not available", self.status_helper.PRIORITY_HIGH)
