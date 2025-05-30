@@ -24,16 +24,11 @@ class PixelcutApiWorker(QThread):
                 self.error_occurred.emit("Credits API URL not configured")
                 return
             
-            print(f"Making credits API request to: {credits_url}")
-            
             # Make API request with timeout
             response = requests.get(credits_url, headers=headers_config, timeout=12)
             
-            print(f"Credits API response: {response.status_code}")
-            
             if response.status_code == 200:
                 credit_data = response.json()
-                print(f"Credits received: {credit_data.get('creditsRemaining', 0)}")
                 
                 # Update config cache
                 self.config_manager.set("pixelcut_credits", credit_data)
@@ -49,24 +44,19 @@ class PixelcutApiWorker(QThread):
                 elif response.status_code == 403:
                     error_msg = "API access forbidden"
                 
-                print(f"Credits API error: {error_msg}")
                 self.error_occurred.emit(error_msg)
                 
         except requests.exceptions.Timeout:
             error_msg = "Request timeout - Check connection"
-            print(f"Credits API timeout: {error_msg}")
             self.error_occurred.emit(error_msg)
         except requests.exceptions.RequestException as e:
             error_msg = f"Network error: {str(e)}"
-            print(f"Credits API network error: {error_msg}")
             self.error_occurred.emit(error_msg)
         except json.JSONDecodeError as e:
             error_msg = f"Invalid API response: {str(e)}"
-            print(f"Credits API JSON error: {error_msg}")
             self.error_occurred.emit(error_msg)
         except Exception as e:
             error_msg = f"Unexpected error: {str(e)}"
-            print(f"Credits API unexpected error: {error_msg}")
             self.error_occurred.emit(error_msg)
 
 class PixelcutApiHelper(QObject):
@@ -110,7 +100,7 @@ class PixelcutApiHelper(QObject):
                 cached_credits = self.config_manager.get("pixelcut_credits", {}).get("credits_remaining", 0)
             
             self.current_credits = cached_credits
-            print(f"Loaded cached credits: {cached_credits}")
+            # print(f"Loaded cached credits: {cached_credits}")
         except Exception as e:
             print(f"Error loading cached credits: {e}")
             self.current_credits = 0
@@ -122,7 +112,7 @@ class PixelcutApiHelper(QObject):
             self.daily_reset_timer.timeout.connect(self._reset_daily_counter)
             # Check every hour for date change
             self.daily_reset_timer.start(3600000)  # 1 hour = 3600000 ms
-            print("Daily reset timer initialized")
+            # print("Daily reset timer initialized")
         except Exception as e:
             print(f"Error setting up daily reset timer: {e}")
 
@@ -145,7 +135,7 @@ class PixelcutApiHelper(QObject):
             for key in cache_to_remove:
                 del self.validation_cache[key]
             
-            print(f"Loaded validation cache with {len(self.validation_cache)} entries")
+            # print(f"Loaded validation cache with {len(self.validation_cache)} entries")
         except Exception as e:
             print(f"Error loading cache from config: {e}")
             self.validation_cache = {}
@@ -178,12 +168,12 @@ class PixelcutApiHelper(QObject):
             # Check if we need to reset for new day
             current_date = time.strftime('%Y-%m-%d')
             if current_date != self.last_reset_date:
-                print(f"New day detected, resetting API counter from {self.daily_api_calls} to 0")
+                # print(f"New day detected, resetting API counter from {self.daily_api_calls} to 0")
                 self.daily_api_calls = 0
                 self.last_reset_date = current_date
                 self._save_daily_tracking_to_config()
             
-            print(f"Loaded daily tracking: {self.daily_api_calls}/{self.max_daily_calls} calls for {self.last_reset_date}")
+            # print(f"Loaded daily tracking: {self.daily_api_calls}/{self.max_daily_calls} calls for {self.last_reset_date}")
         except Exception as e:
             print(f"Error loading daily tracking from config: {e}")
             self.last_reset_date = time.strftime('%Y-%m-%d')
@@ -206,13 +196,13 @@ class PixelcutApiHelper(QObject):
             self.config_manager.save_config()
         except Exception as e:
             print(f"Error saving daily tracking to config: {e}")
-    
+
     def _reset_daily_counter(self):
         """Reset daily API call counter if date has changed"""
         try:
             current_date = time.strftime('%Y-%m-%d')
             if current_date != self.last_reset_date:
-                print(f"Resetting daily API counter for new date: {current_date}")
+                # print(f"Resetting daily API counter for new date: {current_date}")
                 self.daily_api_calls = 0
                 self.last_reset_date = current_date
                 self._save_daily_tracking_to_config()
@@ -226,44 +216,44 @@ class PixelcutApiHelper(QObject):
             
             # Check daily limit
             if self.daily_api_calls >= self.max_daily_calls:
-                print(f"Daily API limit reached: {self.daily_api_calls}/{self.max_daily_calls}")
+                # print(f"Daily API limit reached: {self.daily_api_calls}/{self.max_daily_calls}")
                 return False, "Daily API limit reached"
             
             # Check if already fetching
             if self.is_fetching or (self.api_worker and self.api_worker.isRunning()):
-                print("API call already in progress")
+                # print("API call already in progress")
                 return False, "API call in progress"
             
             # Check minimum interval
             time_since_last = current_time - self.last_fetch_time
             if time_since_last < self.min_fetch_interval:
-                print(f"Rate limiting: {time_since_last}ms since last, minimum is {self.min_fetch_interval}ms")
+                # print(f"Rate limiting: {time_since_last}ms since last, minimum is {self.min_fetch_interval}ms")
                 return False, f"Rate limited - wait {(self.min_fetch_interval - time_since_last)//1000} seconds"
             
             return True, "OK"
         except Exception as e:
             print(f"Error checking API call conditions: {e}")
             return False, f"Error: {e}"
-    
+
     def fetch_credits(self):
         """Fetch current credits from API with comprehensive safety checks"""
         # SAFETY CHECK: Can we make API call?
         can_call, reason = self._can_make_api_call()
         if not can_call:
-            print(f"Skipping API call: {reason}")
+            # print(f"Skipping API call: {reason}")
             # Use cached data
             cached_credits = self.config_manager.get("pixelcut_credits", {}).get("creditsRemaining", 0)
             if cached_credits > 0:
                 self.current_credits = cached_credits
                 self.credits_updated.emit(cached_credits)
-                print(f"Using cached credits: {cached_credits}")
+                # print(f"Using cached credits: {cached_credits}")
             else:
                 self.credits_error.emit(reason)
             return
         
         # Acquire mutex to prevent concurrent fetches
         if not self.fetch_mutex.tryLock():
-            print("Credits fetch mutex locked, skipping")
+            # print("Credits fetch mutex locked, skipping")
             return
         
         try:
@@ -274,7 +264,7 @@ class PixelcutApiHelper(QObject):
             # Save tracking data immediately
             self._save_daily_tracking_to_config()
             
-            print(f"Starting credits fetch from API (Daily calls: {self.daily_api_calls}/{self.max_daily_calls})")
+            # print(f"Starting credits fetch from API (Daily calls: {self.daily_api_calls}/{self.max_daily_calls})")
             
             self.api_worker = PixelcutApiWorker(self.config_manager)
             self.api_worker.credits_received.connect(self.on_credits_received)
@@ -294,7 +284,7 @@ class PixelcutApiHelper(QObject):
         if cache_key and cache_key in self.validation_cache:
             cache_entry = self.validation_cache[cache_key]
             if current_time - cache_entry['timestamp'] < self.cache_duration:
-                print(f"Using cached validation result (age: {(current_time - cache_entry['timestamp'])//1000}s)")
+                # print(f"Using cached validation result (age: {(current_time - cache_entry['timestamp'])//1000}s)")
                 success = cache_entry['valid']
                 message = cache_entry['message']
                 credits = cache_entry['credits']
@@ -303,7 +293,7 @@ class PixelcutApiHelper(QObject):
         
         # SAFETY CHECK: Daily limit
         if self.daily_api_calls >= self.max_daily_calls:
-            print(f"Daily API limit reached for validation: {self.daily_api_calls}/{self.max_daily_calls}")
+            # print(f"Daily API limit reached for validation: {self.daily_api_calls}/{self.max_daily_calls}")
             # Use cached config data
             cached_credits = self.config_manager.get("pixelcut_credits", {}).get("creditsRemaining", 0)
             if cached_credits > 0:
@@ -315,7 +305,7 @@ class PixelcutApiHelper(QObject):
         # Rate limiting check - VERY conservative
         time_since_last = current_time - self.last_validation_time
         if time_since_last < self.min_validation_interval:
-            print(f"Rate limiting validation: {time_since_last}ms since last, minimum is {self.min_validation_interval}ms")
+            # print(f"Rate limiting validation: {time_since_last}ms since last, minimum is {self.min_validation_interval}ms")
             # ONLY use cache if exact API key exists in cache
             if cache_key and cache_key in self.validation_cache:
                 cache_entry = self.validation_cache[cache_key]
@@ -335,7 +325,7 @@ class PixelcutApiHelper(QObject):
             return
         
         try:
-            print(f"Starting API key validation (Daily calls: {self.daily_api_calls}/{self.max_daily_calls})")
+            # print(f"Starting API key validation (Daily calls: {self.daily_api_calls}/{self.max_daily_calls})")
             url = "https://api.developer.pixelcut.ai/v1/credits"
             headers = {
                 'Accept': 'application/json',
@@ -343,11 +333,15 @@ class PixelcutApiHelper(QObject):
             }
             
             response = requests.get(url, headers=headers, timeout=15)
-            print(f"Validation API response: {response.status_code}")
+            # print(f"Validation API response: {response.status_code}")
             
             if response.status_code == 200:
                 credit_data = response.json()
                 credits_remaining = credit_data.get("creditsRemaining", 0)
+                
+                # SAVE COMPLETE API RESPONSE TO CONFIG
+                self.config_manager.set("pixelcut_credits", credit_data)
+                self.config_manager.save_config()
                 
                 if credits_remaining > 0:
                     # Cache successful result with FULL API key
@@ -358,9 +352,8 @@ class PixelcutApiHelper(QObject):
                             'credits': credits_remaining,
                             'timestamp': current_time
                         }
-                    
-                    # Update config cache
-                    self.config_manager.set("pixelcut_credits", credit_data)
+                        # SAVE CACHE TO CONFIG
+                        self._save_cache_to_config()
                     
                     self.validation_completed.emit(True, f"Ready ({credits_remaining} credits available)", credits_remaining)
                 else:
@@ -372,6 +365,8 @@ class PixelcutApiHelper(QObject):
                             'credits': 0,
                             'timestamp': current_time
                         }
+                        # SAVE CACHE TO CONFIG
+                        self._save_cache_to_config()
                     
                     self.validation_completed.emit(False, "Insufficient credits", 0)
             else:
@@ -393,6 +388,8 @@ class PixelcutApiHelper(QObject):
                         'credits': 0,
                         'timestamp': current_time
                     }
+                    # SAVE CACHE TO CONFIG
+                    self._save_cache_to_config()
                 
                 self.validation_completed.emit(False, error_msg, 0)
                 
@@ -404,7 +401,7 @@ class PixelcutApiHelper(QObject):
             error_msg = "Validation error"
             print(f"Validation unexpected error: {e}")
             self.validation_completed.emit(False, error_msg, 0)
-    
+
     def quick_validate_api_key(self, api_key):
         """Quick validation - PREFERS cache over API calls but uses FULL API key"""
         current_time = int(time.time() * 1000)
@@ -415,12 +412,12 @@ class PixelcutApiHelper(QObject):
             cache_entry = self.validation_cache[cache_key]
             # Use cache even if older - only make API call if cache is very old
             if current_time - cache_entry['timestamp'] < (self.cache_duration * 2):  # Double cache duration
-                print(f"Using cached quick validation result (age: {(current_time - cache_entry['timestamp'])//1000}s)")
+                # print(f"Using cached quick validation result (age: {(current_time - cache_entry['timestamp'])//1000}s)")
                 return cache_entry['valid'] and cache_entry['credits'] > 0
         
         # SAFETY CHECK: Daily limit reached?
         if self.daily_api_calls >= self.max_daily_calls:
-            print(f"Daily API limit reached for quick validation: {self.daily_api_calls}/{self.max_daily_calls}")
+            # print(f"Daily API limit reached for quick validation: {self.daily_api_calls}/{self.max_daily_calls}")
             # ONLY use cache if exact API key exists
             if cache_key and cache_key in self.validation_cache:
                 cache_entry = self.validation_cache[cache_key]
@@ -433,18 +430,18 @@ class PixelcutApiHelper(QObject):
         # Rate limiting - VERY conservative for quick validation
         time_since_last = current_time - self.last_validation_time
         if time_since_last < (self.min_validation_interval * 2):  # Double the interval for quick validation
-            print(f"Rate limiting quick validation: Using cached result for exact key")
+            # print(f"Rate limiting quick validation: Using cached result for exact key")
             # ONLY use cache if exact API key exists
             if cache_key and cache_key in self.validation_cache:
                 cache_entry = self.validation_cache[cache_key]
                 return cache_entry['valid'] and cache_entry['credits'] > 0
             else:
                 # No exact match in cache, assume invalid for safety
-                print(f"No exact cache match for API key, assuming invalid")
+                # print(f"No exact cache match for API key, assuming invalid")
                 return False
         
         try:
-            print(f"Performing quick API validation (Daily calls: {self.daily_api_calls}/{self.max_daily_calls})")
+            # print(f"Performing quick API validation (Daily calls: {self.daily_api_calls}/{self.max_daily_calls})")
             url = "https://api.developer.pixelcut.ai/v1/credits"
             headers = {
                 'Accept': 'application/json',
@@ -460,6 +457,10 @@ class PixelcutApiHelper(QObject):
                 credits_remaining = credit_data.get("creditsRemaining", 0)
                 is_valid = credits_remaining > 0
                 
+                # SAVE COMPLETE API RESPONSE TO CONFIG
+                self.config_manager.set("pixelcut_credits", credit_data)
+                self.config_manager.save_config()
+                
                 # Cache the result for long time with FULL API key
                 if cache_key:
                     self.validation_cache[cache_key] = {
@@ -468,14 +469,13 @@ class PixelcutApiHelper(QObject):
                         'credits': credits_remaining,
                         'timestamp': current_time
                     }
+                    # SAVE CACHE TO CONFIG
+                    self._save_cache_to_config()
                 
-                # Update config cache
-                self.config_manager.set("pixelcut_credits", credit_data)
-                
-                print(f"Quick validation result: {is_valid} ({credits_remaining} credits)")
+                # print(f"Quick validation result: {is_valid} ({credits_remaining} credits)")
                 return is_valid
             else:
-                print(f"Quick validation failed: HTTP {response.status_code}")
+                # print(f"Quick validation failed: HTTP {response.status_code}")
                 if response.status_code == 429:
                     # Don't count rate limited calls
                     self.daily_api_calls -= 1
@@ -488,6 +488,8 @@ class PixelcutApiHelper(QObject):
                         'credits': 0,
                         'timestamp': current_time
                     }
+                    # SAVE CACHE TO CONFIG
+                    self._save_cache_to_config()
                 return False
                 
         except Exception as e:
@@ -531,10 +533,10 @@ class PixelcutApiHelper(QObject):
             }
             
             self.config_manager.set("api_validation_cache", cache_data)
-            print(f"Saved validation cache with {len(self.validation_cache)} entries")
+            # print(f"Saved validation cache with {len(self.validation_cache)} entries")
         except Exception as e:
             print(f"Error saving cache to config: {e}")
-    
+
     def on_credits_received(self, credit_data):
         """Handle successful credit data reception"""
         try:
@@ -544,7 +546,7 @@ class PixelcutApiHelper(QObject):
                 credits_remaining = credit_data.get("credits_remaining", 0)
             
             self.current_credits = credits_remaining
-            print(f"Credits updated: {credits_remaining}")
+            # print(f"Credits updated: {credits_remaining}")
             self.credits_updated.emit(credits_remaining)
         except Exception as e:
             print(f"Error processing credits data: {e}")
@@ -557,7 +559,7 @@ class PixelcutApiHelper(QObject):
             # Fall back to cached value from config
             cached_credits = self.config_manager.get("pixelcut_credits", {}).get("creditsRemaining", 0)
             self.current_credits = cached_credits
-            print(f"Using cached credits after error: {cached_credits}")
+            # print(f"Using cached credits after error: {cached_credits}")
             self.credits_error.emit(error_message)
         except Exception as e:
             print(f"Error handling credits error: {e}")
@@ -565,7 +567,7 @@ class PixelcutApiHelper(QObject):
     def on_worker_finished(self):
         """Clean up worker thread"""
         try:
-            print("Credits fetch worker finished")
+            # print("Credits fetch worker finished")
             self.is_fetching = False
             if self.api_worker:
                 self.api_worker.deleteLater()

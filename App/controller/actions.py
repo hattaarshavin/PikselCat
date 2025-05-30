@@ -97,11 +97,6 @@ class ActionsController(QObject):
                 self.status_helper, 
                 self.actions_widget
             )
-            
-            if settings_controller:
-                print("Settings dialog opened successfully")
-            else:
-                self.status_helper.show_error("Failed to open settings dialog")
                 
         except ImportError as e:
             print(f"Import error: {e}")
