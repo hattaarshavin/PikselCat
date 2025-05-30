@@ -30,7 +30,8 @@ class WidgetCreationManager(QObject):
         if not file_paths:
             self.loading_completed.emit([])
             return
-              # Start the creation process
+        
+        # Start immediately without delay
         self.create_next_widget()
         
     def create_next_widget(self):
@@ -49,7 +50,7 @@ class WidgetCreationManager(QObject):
         # Update progress
         progress = int(((self.current_index + 1) / len(self.file_paths)) * 100)
         filename = os.path.basename(file_path)
-        status = f"Creating widget for: {filename}"
+        status = f"Creating widget {self.current_index + 1}/{len(self.file_paths)}: {filename}"
         self.progress_updated.emit(progress, status)
         
         # Check cancellation before creating widget
@@ -77,9 +78,14 @@ class WidgetCreationManager(QObject):
         
         self.current_index += 1
         
-        # Schedule next widget creation with small delay for UI responsiveness
+        # Create next widget immediately for faster processing
         if not self.cancelled:
-            self.timer.start(5)  # Reduced from 10ms to 5ms for better responsiveness
+            # Use direct call instead of timer for faster creation
+            if self.current_index < len(self.file_paths):
+                self.timer.start(1)  # Minimal delay, almost immediate
+            else:
+                # Last widget, complete immediately
+                self.loading_completed.emit(self.created_widgets)
     
     def cancel(self):
         """Cancel the widget loading operation"""

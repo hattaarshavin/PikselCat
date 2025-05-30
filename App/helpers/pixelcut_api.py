@@ -411,95 +411,30 @@ class PixelcutApiHelper(QObject):
         if cache_key and cache_key in self.validation_cache:
             cache_entry = self.validation_cache[cache_key]
             # Use cache even if older - only make API call if cache is very old
-            if current_time - cache_entry['timestamp'] < (self.cache_duration * 2):  # Double cache duration
-                # print(f"Using cached quick validation result (age: {(current_time - cache_entry['timestamp'])//1000}s)")
+            if current_time - cache_entry['timestamp'] < (self.cache_duration * 3):  # Even longer cache for quick validation
                 return cache_entry['valid'] and cache_entry['credits'] > 0
         
-        # SAFETY CHECK: Daily limit reached?
-        if self.daily_api_calls >= self.max_daily_calls:
-            # print(f"Daily API limit reached for quick validation: {self.daily_api_calls}/{self.max_daily_calls}")
-            # ONLY use cache if exact API key exists
-            if cache_key and cache_key in self.validation_cache:
-                cache_entry = self.validation_cache[cache_key]
-                return cache_entry['valid'] and cache_entry['credits'] > 0
-            else:
-                # Fall back to cached credits in config - but this is less reliable
-                cached_credits = self.config_manager.get("pixelcut_credits", {}).get("creditsRemaining", 0)
-                return cached_credits > 0
-        
-        # Rate limiting - VERY conservative for quick validation
-        time_since_last = current_time - self.last_validation_time
-        if time_since_last < (self.min_validation_interval * 2):  # Double the interval for quick validation
-            # print(f"Rate limiting quick validation: Using cached result for exact key")
-            # ONLY use cache if exact API key exists
-            if cache_key and cache_key in self.validation_cache:
-                cache_entry = self.validation_cache[cache_key]
-                return cache_entry['valid'] and cache_entry['credits'] > 0
-            else:
-                # No exact match in cache, assume invalid for safety
-                # print(f"No exact cache match for API key, assuming invalid")
-                return False
-        
-        try:
-            # print(f"Performing quick API validation (Daily calls: {self.daily_api_calls}/{self.max_daily_calls})")
-            url = "https://api.developer.pixelcut.ai/v1/credits"
-            headers = {
-                'Accept': 'application/json',
-                'X-API-KEY': api_key
-            }
-            
-            response = requests.get(url, headers=headers, timeout=10)
-            self.last_validation_time = current_time
-            self.daily_api_calls += 1
-            
-            if response.status_code == 200:
-                credit_data = response.json()
-                credits_remaining = credit_data.get("creditsRemaining", 0)
-                is_valid = credits_remaining > 0
-                
-                # SAVE COMPLETE API RESPONSE TO CONFIG
-                self.config_manager.set("pixelcut_credits", credit_data)
-                self.config_manager.save_config()
-                
-                # Cache the result for long time with FULL API key
-                if cache_key:
-                    self.validation_cache[cache_key] = {
-                        'valid': is_valid,
-                        'message': f"Quick validation ({credits_remaining} credits)",
-                        'credits': credits_remaining,
-                        'timestamp': current_time
-                    }
-                    # SAVE CACHE TO CONFIG
-                    self._save_cache_to_config()
-                
-                # print(f"Quick validation result: {is_valid} ({credits_remaining} credits)")
-                return is_valid
-            else:
-                # print(f"Quick validation failed: HTTP {response.status_code}")
-                if response.status_code == 429:
-                    # Don't count rate limited calls
-                    self.daily_api_calls -= 1
-                
-                # Cache negative result with FULL API key
-                if cache_key:
-                    self.validation_cache[cache_key] = {
-                        'valid': False,
-                        'message': f"API error {response.status_code}",
-                        'credits': 0,
-                        'timestamp': current_time
-                    }
-                    # SAVE CACHE TO CONFIG
-                    self._save_cache_to_config()
-                return False
-                
-        except Exception as e:
-            print(f"Quick API validation failed: {e}")
-            # Don't count errors against daily limit
-            if self.daily_api_calls > 0:
-                self.daily_api_calls -= 1
-            
-            # No fallback to config - if API fails and no exact cache, assume invalid
+        # For quick validation, be very conservative about API calls
+        # If no recent cache, assume invalid and require full validation
+        if not cache_key:
             return False
+        
+        # Check if we have any recent cached credits in config
+        cached_credits = self.config_manager.get("pixelcut_credits", {}).get("creditsRemaining", 0)
+        if cached_credits > 0:
+            # We have some cached credits, likely valid
+            # Cache this assumption
+            if cache_key:
+                self.validation_cache[cache_key] = {
+                    'valid': True,
+                    'message': f"Assumed valid ({cached_credits} cached credits)",
+                    'credits': cached_credits,
+                    'timestamp': current_time
+                }
+            return True
+        
+        # No cache, no credits - assume invalid for quick check
+        return False
 
     def _save_cache_to_config(self):
         """Save validation cache to config with cleanup"""

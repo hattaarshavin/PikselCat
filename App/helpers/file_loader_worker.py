@@ -39,69 +39,63 @@ class FileLoaderWorker(QThread):
         
         # Initial progress
         self.progress_updated.emit(0, f"Scanning {total_files} files...")
-        for file_path in self.files:
+        
+        # Batch process files for better performance
+        batch_size = 10
+        for i in range(0, len(self.files), batch_size):
             if self.cancelled:
                 break
                 
-            # Check if file exists
-            if not os.path.exists(file_path):
+            batch = self.files[i:i+batch_size]
+            for file_path in batch:
+                if self.cancelled:
+                    break
+                    
+                # Quick existence check first
+                if not os.path.exists(file_path):
+                    processed_count += 1
+                    continue
+                
+                # Quick extension check
+                ext = os.path.splitext(file_path)[1].lower()
+                if ext not in self.supported_extensions:
+                    processed_count += 1
+                    continue
+                
+                # Fast validation
+                is_valid = self.quick_validate_image_file(file_path)
+                
+                if is_valid:
+                    self.valid_files.append(file_path)
+                    
                 processed_count += 1
-                progress = int((processed_count / total_files) * 100)
-                self.progress_updated.emit(progress, f"Skipped: {os.path.basename(file_path)} (not found)")
-                self.file_processed.emit(file_path, False)
-                continue
-            
-            # Check cancellation again before processing
-            if self.cancelled:
-                break
-            
-            # Check file extension first
-            ext = os.path.splitext(file_path)[1].lower()
-            if ext not in self.supported_extensions:
-                processed_count += 1
-                progress = int((processed_count / total_files) * 100)
-                self.progress_updated.emit(progress, f"Skipped: {os.path.basename(file_path)} (not an image)")
-                self.file_processed.emit(file_path, False)
-                continue
-            
-            # Check cancellation again before validation
-            if self.cancelled:
-                break
-            
-            # Try to validate the image file
-            is_valid = self.validate_image_file(file_path)
-            
-            # Check cancellation after validation
-            if self.cancelled:
-                break
-            
-            if is_valid:
-                self.valid_files.append(file_path)
                 
-            processed_count += 1
-            progress = int((processed_count / total_files) * 100)
-            
-            status = f"Processing: {os.path.basename(file_path)}"
-            if is_valid:
-                status += " ✓"
-            else:
-                status += " ✗"
+                # Update progress every 5 files for better responsiveness
+                if processed_count % 5 == 0 or processed_count == total_files:
+                    progress = int((processed_count / total_files) * 100)
+                    status = f"Processed {processed_count}/{total_files} files"
+                    self.progress_updated.emit(progress, status)
                 
-            self.progress_updated.emit(progress, status)
-            self.file_processed.emit(file_path, is_valid)
+                # Check cancellation more frequently
+                if self.cancelled:
+                    break
             
-            # Small delay to allow UI updates and cancellation - check cancellation after delay
-            self.msleep(5)  # Reduced from 10ms to 5ms for better responsiveness
-            if self.cancelled:
-                break
+            # Minimal delay between batches
+            if not self.cancelled and i + batch_size < len(self.files):
+                self.msleep(1)  # Very small delay
     
-    def validate_image_file(self, file_path):
-        """Validate if file is a valid image that Pillow can open"""
+    def quick_validate_image_file(self, file_path):
+        """Fast image validation - just check if file can be opened"""
         try:
+            # Get file size first - skip very small files
+            file_size = os.path.getsize(file_path)
+            if file_size < 100:  # Less than 100 bytes is likely not a valid image
+                return False
+            
+            # Quick PIL check without full verification
             with Image.open(file_path) as img:
-                # Try to load the image to verify it's valid
-                img.verify()
-                return True
+                # Just check format, don't verify entire file
+                return img.format is not None
         except Exception:
             return False
     

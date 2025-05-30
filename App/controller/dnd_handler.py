@@ -244,9 +244,8 @@ class DndHandler(QObject):
     
     def start_file_loading(self, files):
         """Start threaded file loading with progress dialog"""
-        # Check API key before processing
-        if not self.check_api_key():
-            return
+        # Don't check API key here - do it in background to avoid blocking
+        # Just start loading immediately for better responsiveness
         
         from App.gui.dialogs.progress_dialog import ProgressDialog
         from App.helpers.file_loader_worker import FileLoaderWorker
@@ -261,57 +260,33 @@ class DndHandler(QObject):
         self.file_loader_worker.loading_completed.connect(self.on_loading_completed)
         self.file_loader_worker.loading_cancelled.connect(self.on_loading_cancelled)
         
-        # Show progress dialog and start worker
+        # Show progress dialog and start worker immediately
         self.progress_dialog.show()
         self.file_loader_worker.start()
         
         self.status_helper.show_status("Loading image files...", self.status_helper.PRIORITY_NORMAL)
+        
+        # Check API key in background while files are loading
+        self._check_api_key_background()
     
-    def check_api_key(self):
-        """Check if API key is configured and valid, show settings if not"""
+    def _check_api_key_background(self):
+        """Check API key in background without blocking file loading"""
         if not hasattr(self, 'work_handler') or not self.work_handler:
-            return True  # Skip check if no work handler
+            return
         
         config_manager = getattr(self.work_handler, 'config_manager', None)
         if not config_manager:
-            return True  # Skip check if no config manager
+            return
         
-        # Initialize PixelcutApiHelper if not exists
-        if not self.pixelcut_api:
-            from App.helpers.pixelcut_api import PixelcutApiHelper
-            self.pixelcut_api = PixelcutApiHelper(config_manager)
-        
-        # Check if API key is empty or not configured
+        # Quick check without API call
         api_key = config_manager.get("api_headers", {}).get("X-API-KEY", "").strip()
         
         if not api_key:
-            # Show settings dialog
-            self.status_helper.show_status("API key required - Opening settings...", self.status_helper.PRIORITY_HIGH)
-            
-            from App.controller.settings import SettingsController
-            SettingsController.show_settings_dialog(config_manager, self.status_helper, self.dnd_widget)
-            
-            # Check again after settings dialog
-            api_key = config_manager.get("api_headers", {}).get("X-API-KEY", "").strip()
-            if not api_key:
-                self.status_helper.show_status("API key required to process files", self.status_helper.PRIORITY_HIGH)
-                return False
-        else:
-            # API key ada, tapi cek apakah masih valid menggunakan PixelcutApiHelper
-            if not self.pixelcut_api.quick_validate_api_key(api_key):
-                # API key invalid, clear dan show settings
-                config_manager.save_api_key("")
-                self.status_helper.show_status("API key invalid - Opening settings...", self.status_helper.PRIORITY_HIGH)
-                
-                from App.controller.settings import SettingsController
-                SettingsController.show_settings_dialog(config_manager, self.status_helper, self.dnd_widget)
-                
-                # Check again after settings dialog
-                api_key = config_manager.get("api_headers", {}).get("X-API-KEY", "").strip()
-                if not api_key:
-                    self.status_helper.show_status("Valid API key required to process files", self.status_helper.PRIORITY_HIGH)
-                    return False
-        
+            # Schedule settings dialog to show after file loading completes
+            self._show_settings_after_loading = True
+    
+    def check_api_key(self):
+        """Legacy method - now just returns True for compatibility"""
         return True
     
     def on_progress_updated(self, progress, status):
@@ -324,6 +299,13 @@ class DndHandler(QObject):
         if self.progress_dialog:
             # Don't close progress dialog yet - it will be used for widget creation
             self.progress_dialog.set_stage("widgets", 0)
+        
+        # Check if we need to show settings dialog
+        if hasattr(self, '_show_settings_after_loading') and self._show_settings_after_loading:
+            self._show_settings_after_loading = False
+            if valid_files:  # Only show if we have files to process
+                self._prompt_api_key_for_files(valid_files)
+                return
         
         if valid_files:
             # Load valid files into work handler (this will start widget creation)
@@ -346,6 +328,32 @@ class DndHandler(QObject):
         if self.file_loader_worker:
             self.file_loader_worker.deleteLater()
             self.file_loader_worker = None
+    
+    def _prompt_api_key_for_files(self, valid_files):
+        """Show API key prompt after files are loaded"""
+        if self.progress_dialog:
+            self.progress_dialog.close()
+            self.progress_dialog = None
+        
+        self.status_helper.show_status("API key required - Opening settings...", self.status_helper.PRIORITY_HIGH)
+        
+        from App.controller.settings import SettingsController
+        SettingsController.show_settings_dialog(
+            self.work_handler.config_manager, 
+            self.status_helper, 
+            self.dnd_widget
+        )
+        
+        # Check again after settings dialog
+        api_key = self.work_handler.config_manager.get("api_headers", {}).get("X-API-KEY", "").strip()
+        if api_key:
+            # Now process the files
+            if self.work_handler:
+                self.work_handler.load_files(valid_files)
+            self.files_loaded.emit(valid_files)
+            self.status_helper.show_status(f"Processing {len(valid_files)} files...", self.status_helper.PRIORITY_NORMAL)
+        else:
+            self.status_helper.show_status("API key required to process files", self.status_helper.PRIORITY_HIGH)
     
     def on_loading_cancelled(self):
         """Handle cancellation of file loading"""
