@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QStackedWidget, QVBoxLayout, QSpacerItem, QSizePolicy
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QStackedWidget, QVBoxLayout, QSpacerItem, QSizePolicy, QComboBox, QComboBox
 from PySide6.QtCore import QObject, Signal, Qt
 import qtawesome as qta
 import os
@@ -22,15 +22,29 @@ class WorkHandler(QObject):
         
         self.setup_ui()
         self.setup_connections()
-    
     def setup_ui(self):
         """Setup the work area UI elements with icons"""
         if self.work_area_widget:
+            
             # Find and set icon for clear button (using X icon instead of trash)
             clear_btn = self.work_area_widget.findChild(QPushButton, "clearFilesButton")
             if clear_btn:                
                 clear_icon = qta.icon('fa6s.xmark', color='white')
                 clear_btn.setIcon(clear_icon)
+            
+            # Set icons for cost information labels
+            estimated_cost_icon = self.work_area_widget.findChild(QLabel, "estimatedCostIcon")
+            if estimated_cost_icon:
+                cost_icon = qta.icon('fa6s.calculator', color='#ff7f36')
+                estimated_cost_icon.setPixmap(cost_icon.pixmap(16, 16))
+            
+            remaining_credit_icon = self.work_area_widget.findChild(QLabel, "remainingCreditIcon")
+            if remaining_credit_icon:
+                credit_icon = qta.icon('fa6s.wallet', color='#ff7f36')
+                remaining_credit_icon.setPixmap(credit_icon.pixmap(16, 16))
+            
+            # Initialize cost calculation display
+            self.update_cost_calculation()
     
     def setup_connections(self):
         """Setup work area button connections"""
@@ -38,6 +52,11 @@ class WorkHandler(QObject):
             clear_btn = self.work_area_widget.findChild(QPushButton, "clearFilesButton")
             if clear_btn:
                 clear_btn.clicked.connect(self.clear_files)
+                  # Connect combobox change to update cost calculation
+            action_combo = self.work_area_widget.findChild(QComboBox, "actionComboBox")
+            if action_combo:
+                action_combo.currentTextChanged.connect(self.update_cost_calculation)
+    
     def load_files(self, files):
         """Load files into work area with two-stage loading process"""
         self.loaded_files = files
@@ -95,7 +114,6 @@ class WorkHandler(QObject):
         if hasattr(self, 'progress_dialog') and self.progress_dialog:
             self.progress_dialog.set_value(progress)
             self.progress_dialog.set_status(status)
-    
     def on_widget_created(self, widget):
         """Handle individual widget creation"""
         # Connect the remove signal
@@ -114,6 +132,9 @@ class WorkHandler(QObject):
                 
                 self.file_widgets.append(widget)
                 file_list_layout.addWidget(widget)
+                
+                # Update cost calculation in real-time as widgets are created
+                self.update_cost_calculation()
     
     def remove_file(self, file_path):
         """Remove a specific file from the loaded files"""
@@ -133,9 +154,9 @@ class WorkHandler(QObject):
                 self.file_widgets.remove(widget_to_remove)
                 widget_to_remove.setParent(None)
                 widget_to_remove.deleteLater()
-                
-                # Update header
+                  # Update header
                 self.update_work_area_header()
+                self.update_cost_calculation()
                 
                 # If no files left, switch back to DnD area
                 if not self.loaded_files:
@@ -157,9 +178,9 @@ class WorkHandler(QObject):
             file_list_layout = scroll_area.findChild(QVBoxLayout, "fileListLayout")
             if file_list_layout:
                 file_list_layout.addStretch()
-        
-        # Update header with final counts
+          # Update header with final counts
         self.update_work_area_header()
+        self.update_cost_calculation()
         
         self.status_helper.show_success(f"Created {len(widgets)} file widgets")
         
@@ -205,9 +226,11 @@ class WorkHandler(QObject):
             file_list_layout = scroll_area.findChild(QVBoxLayout, "fileListLayout")
             if file_list_layout:
                 self.clear_file_widgets(file_list_layout)
-        
         self.switch_to_dnd_area()
         self.files_cleared.emit()
+        
+        # Update cost calculation after clearing files
+        self.update_cost_calculation()
         
         self.status_helper.show_ready("Ready for new files")
     def switch_to_work_area(self):
@@ -267,3 +290,33 @@ class WorkHandler(QObject):
     def get_loaded_files_count(self):
         """Get the count of loaded files"""
         return len(self.loaded_files)
+    
+    def get_cost_per_action(self, action_text):
+        """Get cost per file for the selected action"""
+        if "Upscale" in action_text:
+            return 10  # 10 credit per file for upscale
+        elif "Remove Bg" in action_text:
+            return 5   # 5 credit per file for remove background        
+        else:
+            return 0   # Default cost
+    def update_cost_calculation(self):
+        """Update estimated cost based on current action and widget count (real-time)"""
+        if not self.work_area_widget:
+            return
+            
+        action_combo = self.work_area_widget.findChild(QComboBox, "actionComboBox")
+        cost_label = self.work_area_widget.findChild(QLabel, "estimatedCostLabel")
+        
+        if action_combo and cost_label:
+            current_action = action_combo.currentText()
+            # Use only actual widget count for true real-time calculation
+            widget_count = len(self.file_widgets)
+            cost_per_file = self.get_cost_per_action(current_action)
+            current_cost = widget_count * cost_per_file
+            
+            if widget_count > 0:
+                # Show cost for widgets that are actually created
+                cost_label.setText(f"Estimated cost: {current_cost} Credit for {widget_count} files")
+            else:
+                # No widgets created yet
+                cost_label.setText("Estimated cost: 0 Credit for 0 files")

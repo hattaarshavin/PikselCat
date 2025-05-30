@@ -424,3 +424,27 @@ QDialog#ProgressDialog QPushButton#cancelButton:disabled {
     color: #888888;
     border: 2px solid transparent;
 }
+
+/* Work Area Cost Info Frame Styling */
+QFrame#costInfoFrame {
+    background-color: rgba(228, 129, 48, 0.103);
+    border: 1px solid rgba(190, 90, 32, 0.363);
+    border-radius: 10px;
+    margin: 5px 0px;
+    padding: 5px;
+}
+
+/* Work Area Cost Info Labels */
+QFrame#costInfoFrame QLabel#estimatedCostLabel,
+QFrame#costInfoFrame QLabel#remainingCreditLabel {
+    background-color: transparent;
+    border: none;
+    font-size: 12px;
+    font-weight: normal;
+    padding: 2px 0px;
+    margin: 0px;
+}
+
+QFrame#costInfoFrame QLabel#estimatedCostLabel {
+    font-weight: bold;
+}
