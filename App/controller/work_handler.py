@@ -121,15 +121,19 @@ class WorkHandler(QObject):
             empty_label.setStyleSheet("color: #666; font-style: italic; padding: 20px;")
             file_list_layout.addWidget(empty_label)
             file_list_layout.addStretch()
-    
     def clear_file_widgets(self, layout):
         """Clear all existing file widgets from the layout"""
         # Remove widgets from layout and delete them
         while layout.count():
             child = layout.takeAt(0)
-            if child.widget():
-                child.widget().setParent(None)
-                child.widget().deleteLater()
+            widget = child.widget()
+            if widget:
+                widget.setParent(None)
+                widget.deleteLater()
+            # Handle spacers and other layout items
+            elif child.spacerItem():
+                # Spacer items don't need special cleanup
+                pass
         
         # Clear our widget references
         self.file_widgets.clear()

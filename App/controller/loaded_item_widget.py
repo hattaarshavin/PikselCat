@@ -1,6 +1,8 @@
 from PySide6.QtWidgets import QWidget, QLabel, QSizePolicy, QHBoxLayout, QVBoxLayout, QFrame
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap
 import qtawesome as qta
+from PIL import Image, ImageQt
 import os
 
 class LoadedItemWidget(QWidget):
@@ -80,23 +82,24 @@ class LoadedItemWidget(QWidget):
         """Populate the widget with file data"""
         if not os.path.exists(self.file_path):
             return
-            
-        # Get file info
+              # Get file info
         file_name = os.path.basename(self.file_path)
         file_dir = os.path.dirname(self.file_path)
         file_size = self.get_file_size()
-        file_icon = self.get_file_icon(file_name)
-        
-        # Set the data
-        if self.file_icon_label:
-            self.file_icon_label.setPixmap(file_icon.pixmap(24, 24))
+        thumbnail = self.get_image_thumbnail()
+          # Set the data
+        if self.file_icon_label and thumbnail:
+            self.file_icon_label.setPixmap(thumbnail)
             
         if self.file_name_label:
-            self.file_name_label.setText(file_name)
+            # Truncate file name if too long
+            truncated_name = self.truncate_filename(file_name, 40)
+            self.file_name_label.setText(truncated_name)
             
         if self.file_path_label:
-            # With word wrap enabled, we can show longer paths
-            display_path = self.truncate_path(file_dir, 80)  # Increased from 50 to 80
+            # Truncate directory path
+            display_path = self.truncate_path(file_dir, 50)
+            self.file_path_label.setText(display_path)
             self.file_path_label.setText(display_path)
             
         if self.file_size_label:
@@ -117,43 +120,44 @@ class LoadedItemWidget(QWidget):
                 return f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
         except:
             return "Unknown"
-    
-    def get_file_icon(self, file_name):
-        """Get appropriate icon for file type"""
-        ext = os.path.splitext(file_name)[1].lower()
-        
-        # Define icon mappings
-        icon_map = {
-            # Images
-            '.jpg': 'fa6s.image', '.jpeg': 'fa6s.image', '.png': 'fa6s.image', 
-            '.gif': 'fa6s.image', '.bmp': 'fa6s.image', '.svg': 'fa6s.image',
-            '.webp': 'fa6s.image', '.ico': 'fa6s.image',
+    def get_image_thumbnail(self):
+        """Generate thumbnail for image files"""
+        try:
+            # Check if file is an image by extension
+            ext = os.path.splitext(self.file_path)[1].lower()
+            image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif', '.webp', '.ico'}
             
-            # Documents
-            '.pdf': 'fa6s.file-pdf', '.doc': 'fa6s.file-word', '.docx': 'fa6s.file-word',
-            '.xls': 'fa6s.file-excel', '.xlsx': 'fa6s.file-excel',
-            '.ppt': 'fa6s.file-powerpoint', '.pptx': 'fa6s.file-powerpoint',
-            '.txt': 'fa6s.file-lines', '.rtf': 'fa6s.file-lines',
+            if ext not in image_extensions:
+                # For non-image files, return a default file icon
+                icon = qta.icon('fa6s.file', color='gray')
+                return icon.pixmap(24, 24)
             
-            # Code files
-            '.py': 'fa6s.file-code', '.js': 'fa6s.file-code', '.html': 'fa6s.file-code',
-            '.css': 'fa6s.file-code', '.php': 'fa6s.file-code', '.cpp': 'fa6s.file-code',
-            '.c': 'fa6s.file-code', '.java': 'fa6s.file-code', '.cs': 'fa6s.file-code',
-            '.json': 'fa6s.file-code', '.xml': 'fa6s.file-code', '.yaml': 'fa6s.file-code',
-            '.yml': 'fa6s.file-code',
-            
-            # Archives
-            '.zip': 'fa6s.file-zipper', '.rar': 'fa6s.file-zipper', '.7z': 'fa6s.file-zipper',
-            '.tar': 'fa6s.file-zipper', '.gz': 'fa6s.file-zipper',
-            
-            # Audio/Video
-            '.mp3': 'fa6s.file-audio', '.wav': 'fa6s.file-audio', '.flac': 'fa6s.file-audio',
-            '.mp4': 'fa6s.file-video', '.avi': 'fa6s.file-video', '.mkv': 'fa6s.file-video',
-            '.mov': 'fa6s.file-video',        }
-        
-        icon_name = icon_map.get(ext, 'fa6s.file')
-        return qta.icon(icon_name, color='gray')
-    
+            # Try to open and create thumbnail for image files
+            with Image.open(self.file_path) as img:
+                # Convert to RGB if necessary (for transparency handling)
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    # Create white background for transparent images
+                    background = Image.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                    img = background
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # Create thumbnail maintaining aspect ratio
+                img.thumbnail((24, 24), Image.Resampling.LANCZOS)
+                
+                # Convert PIL image to QPixmap
+                qt_image = ImageQt.ImageQt(img)
+                pixmap = QPixmap.fromImage(qt_image)
+                
+                return pixmap
+                
+        except Exception as e:
+            # If thumbnail generation fails, return default file icon
+            icon = qta.icon('fa6s.file', color='gray')
+            return icon.pixmap(24, 24)
     def truncate_path(self, path, max_length):
         """Truncate path if too long"""
         if len(path) <= max_length:
@@ -165,6 +169,23 @@ class LoadedItemWidget(QWidget):
             return f"...{os.sep}{os.sep.join(parts[-2:])}"
         else:
             return f"...{path[-max_length:]}"
+    
+    def truncate_filename(self, filename, max_length):
+        """Truncate filename if too long"""
+        if len(filename) <= max_length:
+            return filename
+        
+        # Split name and extension
+        name, ext = os.path.splitext(filename)
+        
+        # Calculate available space for name (reserve space for extension and ellipsis)
+        available_length = max_length - len(ext) - 3  # 3 for "..."
+        
+        if available_length > 0:
+            return f"{name[:available_length]}...{ext}"
+        else:
+            # If extension is too long, just truncate the whole thing
+            return f"{filename[:max_length-3]}..."
     
     def get_file_path(self):
         """Get the file path"""
