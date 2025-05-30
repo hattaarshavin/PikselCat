@@ -1,54 +1,80 @@
-from PySide6.QtWidgets import QWidget, QLabel
+from PySide6.QtWidgets import QWidget, QLabel, QSizePolicy, QHBoxLayout, QVBoxLayout, QFrame
 from PySide6.QtCore import Qt
 import qtawesome as qta
 import os
 
 class LoadedItemWidget(QWidget):
     """Widget representing a single loaded file item"""
-    
-    def __init__(self, file_path: str, ui_helper, parent=None):
+    def __init__(self, file_path: str, parent=None):
         super().__init__(parent)
         self.file_path = file_path
-        self.ui_helper = ui_helper
-        
-        # Load the UI
+          # Setup the UI programmatically
         self.setup_ui()
         self.populate_data()
+    
     def setup_ui(self):
-        """Load the UI from the .ui file"""
-        # Get the base directory (assuming this is called from main)
-        from pathlib import Path
-        from PySide6.QtWidgets import QSizePolicy
-        base_dir = Path(__file__).parent.parent.parent
+        """Create the widget UI programmatically"""
+        # Set widget properties and object name for CSS targeting
+        self.setObjectName("LoadedItemWidget")
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        # Remove fixed height constraints to allow dynamic sizing
         
-        # Load the UI
-        widget = self.ui_helper.load_ui_file(
-            self.ui_helper.get_widget_ui_path(base_dir, "loaded_item_widget.ui"),
-            self
-        )
+        # Create main widget layout (transparent container)
+        main_widget_layout = QVBoxLayout(self)
+        main_widget_layout.setContentsMargins(2, 2, 2, 2)
+        main_widget_layout.setSpacing(0)
         
-        if widget:
-            # Copy the loaded widget's layout to this widget
-            layout = widget.layout()
-            if layout:                
-                self.setLayout(layout)
-                  # Explicitly set size policy to ensure proper expansion
-                self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-                
-                # Ensure the widget takes full horizontal space
-                self.setMinimumWidth(0)  # Remove fixed minimum width
-                self.setMaximumWidth(16777215)  # Ensure no maximum width constraint
-                self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)  # Enable styling
-                
-                # Force the layout to expand horizontally
-                if layout:
-                    layout.setSizeConstraint(layout.SizeConstraint.SetDefaultConstraint)
-                
-                # Get references to the UI elements
-                self.file_icon_label = self.findChild(QLabel, "fileIconLabel")
-                self.file_name_label = self.findChild(QLabel, "fileNameLabel")
-                self.file_path_label = self.findChild(QLabel, "filePathLabel")
-                self.file_size_label = self.findChild(QLabel, "fileSizeLabel")
+        # Create the styled frame that will contain all content
+        self.item_frame = QFrame()
+        self.item_frame.setObjectName("LoadedItemFrame")
+        self.item_frame.setFrameStyle(QFrame.Shape.StyledPanel)
+        self.item_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        
+        # Create main horizontal layout inside the frame
+        main_layout = QHBoxLayout(self.item_frame)
+        main_layout.setSpacing(8)
+        main_layout.setContentsMargins(8, 8, 8, 8)
+        
+        # Create file icon label
+        self.file_icon_label = QLabel()
+        self.file_icon_label.setObjectName("file_icon_label")
+        self.file_icon_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.file_icon_label.setMinimumSize(24, 24)
+        self.file_icon_label.setMaximumSize(24, 24)
+        self.file_icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Create text layout
+        text_layout = QVBoxLayout()
+        text_layout.setSpacing(2)
+          # File name label
+        self.file_name_label = QLabel()
+        self.file_name_label.setObjectName("file_name_label")
+        self.file_name_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.file_name_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.file_name_label.setWordWrap(True)  # Allow text wrapping for long filenames
+        
+        # File size label
+        self.file_size_label = QLabel()
+        self.file_size_label.setObjectName("file_size_label")
+        self.file_size_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.file_size_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        
+        # File path label
+        self.file_path_label = QLabel()
+        self.file_path_label.setObjectName("file_path_label")
+        self.file_path_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.file_path_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.file_path_label.setWordWrap(True)  # Allow text wrapping for long paths
+          # Add labels to text layout
+        text_layout.addWidget(self.file_name_label)
+        text_layout.addWidget(self.file_size_label)
+        text_layout.addWidget(self.file_path_label)
+        
+        # Add widgets to main layout
+        main_layout.addWidget(self.file_icon_label)
+        main_layout.addLayout(text_layout)
+          # Add the frame to the main widget layout
+        main_widget_layout.addWidget(self.item_frame)
     
     def populate_data(self):
         """Populate the widget with file data"""
@@ -69,8 +95,8 @@ class LoadedItemWidget(QWidget):
             self.file_name_label.setText(file_name)
             
         if self.file_path_label:
-            # Truncate path if too long
-            display_path = self.truncate_path(file_dir, 50)
+            # With word wrap enabled, we can show longer paths
+            display_path = self.truncate_path(file_dir, 80)  # Increased from 50 to 80
             self.file_path_label.setText(display_path)
             
         if self.file_size_label:
@@ -123,11 +149,10 @@ class LoadedItemWidget(QWidget):
             # Audio/Video
             '.mp3': 'fa6s.file-audio', '.wav': 'fa6s.file-audio', '.flac': 'fa6s.file-audio',
             '.mp4': 'fa6s.file-video', '.avi': 'fa6s.file-video', '.mkv': 'fa6s.file-video',
-            '.mov': 'fa6s.file-video',
-        }
+            '.mov': 'fa6s.file-video',        }
         
         icon_name = icon_map.get(ext, 'fa6s.file')
-        return qta.icon(icon_name, color='#666')
+        return qta.icon(icon_name, color='gray')
     
     def truncate_path(self, path, max_length):
         """Truncate path if too long"""

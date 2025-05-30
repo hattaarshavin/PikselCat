@@ -164,5 +164,90 @@ QPushButton#stopButton:pressed {
 QPushButton#stopButton:disabled {
     background-color: rgba(138, 142, 145, 0.08);
     color: #888888;
-    border: 2px solid transparent;
+}
+
+/* LoadedItemWidget Specific Styles */
+QWidget#LoadedItemWidget {
+    background-color: transparent;
+    border: none;
+    padding: 0px;
+    margin: 0px;
+}
+
+/* LoadedItemWidget Frame - The actual styled container */
+QFrame#LoadedItemFrame {
+    background-color: rgba(127, 127, 127, 0.05);
+    border: 1px solid rgba(127, 127, 127, 0.2);
+    border-radius: 6px;
+    padding: 2px;
+    margin: 2px 0px;
+    min-height: 40px;
+    /* Removed max-height to allow dynamic content sizing */
+}
+
+QFrame#LoadedItemFrame:hover {
+    background-color: rgba(255, 81, 28, 0.178);
+    border: 1px solid #ff7f36;
+}
+
+/* LoadedItemWidget Icon Label */
+QFrame#LoadedItemFrame QLabel#file_icon_label {
+    background-color: transparent;
+    border: none;
+    padding: 0px;
+    margin: 0px;
+    min-width: 24px;
+    max-width: 24px;
+    min-height: 24px;
+    max-height: 24px;
+}
+
+/* LoadedItemWidget File Name Label */
+QFrame#LoadedItemFrame QLabel#file_name_label {
+    font-weight: bold;
+    font-size: 12px;
+    background-color: transparent;
+    border: none;
+    padding: 0px;
+    margin: 0px;
+}
+
+/* LoadedItemWidget File Size Label */
+QFrame#LoadedItemFrame QLabel#file_size_label {
+    font-size: 10px;
+    font-weight: bold;
+    background-color: transparent;
+    border: none;
+    padding: 0px;
+    margin: 0px;
+}
+
+/* LoadedItemWidget File Path Label */
+QFrame#LoadedItemFrame QLabel#file_path_label {
+    font-size: 10px;
+    font-weight: normal;
+    background-color: transparent;
+    border: none;
+    padding: 0px;
+    margin: 0px;
+}
+
+/* Work Area ScrollArea Styling */
+QScrollArea#fileScrollArea {
+    background-color: rgba(127, 127, 127, 0.02);
+    border: 1px solid rgba(127, 127, 127, 0.1);
+    border-radius: 10px;
+    padding: 10px;
+    margin: 0px;
+}
+
+/* Work Area ScrollArea Widget Contents */
+QWidget#scrollAreaWidgetContents {
+    background-color: transparent;
+    border: none;
+}
+
+/* Work Area File List Layout - Layout properties handled in code */
+QWidget#scrollAreaWidgetContents QVBoxLayout {
+    margin: 5px;
 }

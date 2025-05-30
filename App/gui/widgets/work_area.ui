@@ -15,7 +15,8 @@
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
-  </property>  <layout class="QVBoxLayout" name="verticalLayout">
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing">
     <number>5</number>
    </property>
@@ -30,18 +31,19 @@
    </property>
    <property name="bottomMargin">
     <number>0</number>
-   </property>   <item>
+   </property>
+   <item>
     <layout class="QHBoxLayout" name="headerLayout">
      <item>
       <widget class="QLabel" name="workAreaTitle">
+       <property name="styleSheet">
+        <string>font-weight: bold; font-size: 14px; margin: 5px;</string>
+       </property>
        <property name="text">
         <string>Work Area</string>
        </property>
        <property name="alignment">
-        <set>Qt::AlignLeft|Qt::AlignVCenter</set>
-       </property>
-       <property name="styleSheet">
-        <string>font-weight: bold; font-size: 14px; margin: 5px;</string>
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
        </property>
       </widget>
      </item>
@@ -57,19 +59,20 @@
         </size>
        </property>
       </spacer>
-     </item>     <item>
+     </item>
+     <item>
       <widget class="QPushButton" name="clearFilesButton">
-       <property name="text">
-        <string>Clear Files</string>
-       </property>
-       <property name="toolTip">
-        <string>Clear all files</string>
-       </property>
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
+       </property>
+       <property name="toolTip">
+        <string>Clear all files</string>
+       </property>
+       <property name="text">
+        <string>Clear Files</string>
        </property>
       </widget>
      </item>
@@ -77,15 +80,19 @@
    </item>
    <item>
     <widget class="QScrollArea" name="fileScrollArea">
+     <property name="styleSheet">
+      <string notr="true"/>
+     </property>
      <property name="widgetResizable">
       <bool>true</bool>
-     </property>     <widget class="QWidget" name="scrollAreaWidgetContents">
+     </property>
+     <widget class="QWidget" name="scrollAreaWidgetContents">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>380</width>
-        <height>230</height>
+        <width>398</width>
+        <height>262</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -93,10 +100,13 @@
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
-      </property>      
+      </property>
       <layout class="QVBoxLayout" name="fileListLayout">
        <property name="spacing">
         <number>2</number>
+       </property>
+       <property name="sizeConstraint">
+        <enum>QLayout::SetDefaultConstraint</enum>
        </property>
        <property name="leftMargin">
         <number>5</number>
@@ -110,10 +120,8 @@
        <property name="bottomMargin">
         <number>5</number>
        </property>
-       <property name="sizeConstraint">
-        <enum>QLayout::SetDefaultConstraint</enum>
-       </property>
-      </layout></widget>
+      </layout>
+     </widget>
     </widget>
    </item>
   </layout>

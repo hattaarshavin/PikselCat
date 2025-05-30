@@ -97,17 +97,14 @@ class WorkHandler(QObject):
             
             file_count = len(self.loaded_files)
             folder_count = len(folders)
-            
-            # Update title with counts
+              # Update title with counts
             if title_label:
                 title_text = f"{file_count} files loaded ({folder_count} folder{'s' if folder_count != 1 else ''})"
                 title_label.setText(title_text)
-              # Create individual widgets for each file
-            from ..helpers._ui_helper import UIHelper
-            ui_helper = UIHelper()
+            
+            # Create individual widgets for each file
             for file_path in self.loaded_files:
-                file_widget = LoadedItemWidget(file_path, ui_helper, scroll_area)
-                file_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+                file_widget = LoadedItemWidget(file_path, scroll_area)
                 self.file_widgets.append(file_widget)
                 file_list_layout.addWidget(file_widget)
             
