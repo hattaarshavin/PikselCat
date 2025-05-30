@@ -5,11 +5,8 @@ import os
 
 class WorkHandler(QObject):
     """Handler for work area operations and file processing"""
-    
-    # Signals for communication with other components
+      # Signals for communication with other components
     files_cleared = Signal()
-    processing_started = Signal(list)
-    processing_completed = Signal(int)
     
     def __init__(self, workspace_widget: QWidget, work_area_widget: QWidget, status_helper):
         super().__init__()
@@ -23,31 +20,20 @@ class WorkHandler(QObject):
         
         self.setup_ui()
         self.setup_connections()
-    
     def setup_ui(self):
         """Setup the work area UI elements with icons"""
         if self.work_area_widget:
-            # Find and set icon for clear button
+            # Find and set icon for clear button (using X icon instead of trash)
             clear_btn = self.work_area_widget.findChild(QPushButton, "clearFilesButton")
             if clear_btn:
-                clear_icon = qta.icon('fa6s.trash', color='white')
+                clear_icon = qta.icon('fa6s.xmark', color='white')
                 clear_btn.setIcon(clear_icon)
-            
-            # Find and set icon for process button
-            process_btn = self.work_area_widget.findChild(QPushButton, "processFilesButton")
-            if process_btn:
-                process_icon = qta.icon('fa6s.gear', color='white')
-                process_btn.setIcon(process_icon)
-    
     def setup_connections(self):
         """Setup work area button connections"""
         if self.work_area_widget:
             clear_btn = self.work_area_widget.findChild(QPushButton, "clearFilesButton")
-            process_btn = self.work_area_widget.findChild(QPushButton, "processFilesButton")
             if clear_btn:
                 clear_btn.clicked.connect(self.clear_files)
-            if process_btn:
-                process_btn.clicked.connect(self.process_files)
     
     def load_files(self, files):
         """Load files into work area"""
@@ -56,7 +42,6 @@ class WorkHandler(QObject):
         self.switch_to_work_area()
         
         self.status_helper.show_success("File loading", len(files))
-    
     def clear_files(self):
         """Clear all loaded files and switch back to DnD area"""
         self.loaded_files = []
@@ -64,20 +49,6 @@ class WorkHandler(QObject):
         self.files_cleared.emit()
         
         self.status_helper.show_ready("Ready for new files")
-    
-    def process_files(self):
-        """Process the loaded files - placeholder for future implementation"""
-        if self.loaded_files:
-            self.status_helper.show_processing("files", len(self.loaded_files))
-            self.processing_started.emit(self.loaded_files)
-            
-            print(f"Processing {len(self.loaded_files)} files...")
-            # Add your file processing logic here
-            
-            self.processing_completed.emit(len(self.loaded_files))
-            self.status_helper.show_success("Processing", len(self.loaded_files))
-        else:
-            self.status_helper.show_status("No files to process", self.status_helper.PRIORITY_NORMAL)
     
     def switch_to_work_area(self):
         """Switch to work area view"""
@@ -89,20 +60,44 @@ class WorkHandler(QObject):
         """Switch to DnD area view"""
         if self.stacked_widget:
             self.stacked_widget.setCurrentIndex(0)  # DnD area is at index 0
-    
     def update_work_area_display(self):
         """Update the work area with loaded files"""
         if self.work_area_widget:
+            # Update header title with file count and folder count
+            title_label = self.work_area_widget.findChild(QLabel, "workAreaTitle")
             file_label = self.work_area_widget.findChild(QLabel, "fileListLabel")
-            if file_label:
-                if self.loaded_files:
-                    file_names = [os.path.basename(f) for f in self.loaded_files]
+            
+            if self.loaded_files:
+                # Count unique folders
+                folders = set()
+                file_names = []
+                
+                for file_path in self.loaded_files:
+                    file_names.append(os.path.basename(file_path))
+                    folder_path = os.path.dirname(file_path)
+                    if folder_path:
+                        folders.add(folder_path)
+                
+                file_count = len(file_names)
+                folder_count = len(folders)
+                
+                # Update title with counts
+                if title_label:
+                    title_text = f"{file_count} files loaded ({folder_count} folder{'s' if folder_count != 1 else ''})"
+                    title_label.setText(title_text)
+                
+                # Update file list without count (just list the files)
+                if file_label:
                     if len(file_names) > 10:
-                        display_text = f"Loaded Files ({len(file_names)}):\n" + "\n".join(file_names[:10]) + f"\n... and {len(file_names) - 10} more files"
+                        display_text = "\n".join(file_names[:10]) + f"\n... and {len(file_names) - 10} more files"
                     else:
-                        display_text = f"Loaded Files ({len(file_names)}):\n" + "\n".join(file_names)
+                        display_text = "\n".join(file_names)
                     file_label.setText(display_text)
-                else:
+            else:
+                # No files loaded
+                if title_label:
+                    title_label.setText("Work Area")
+                if file_label:
                     file_label.setText("No files loaded")
     
     def get_loaded_files(self):

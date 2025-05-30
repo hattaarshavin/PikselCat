@@ -89,54 +89,32 @@ QWidget#DndAreaWidget QPushButton#openFolderButton:disabled {
     border: 2px solid transparent;
 }
 
-/* Work Area Buttons - Consistent with other buttons */
+/* Work Area Buttons - Clear button only */
 QWidget#WorkAreaWidget {
     margin: 0px;
     padding: 0px;
 }
 
 QWidget#WorkAreaWidget QPushButton#clearFilesButton {
-    background-color: #ff7f36;
+    background-color: #dc3545;
     color: white;
     border: 2px solid transparent;
-    padding: 8px 16px;
-    border-radius: 20px;
+    padding: 6px 12px;
+    border-radius: 15px;
     font-weight: bold;
-    font-size: 14px;
-    min-width: 120px;
-    min-height: 20px;
+    font-size: 12px;
+    min-width: 80px;
+    min-height: 16px;
     outline: none;
     border-style: solid;
 }
 
 QWidget#WorkAreaWidget QPushButton#clearFilesButton:hover {
-    background-color: #e6722f;
+    background-color: #c82333;
 }
 
 QWidget#WorkAreaWidget QPushButton#clearFilesButton:pressed {
-    background-color: #cc6529;
-}
-
-QWidget#WorkAreaWidget QPushButton#processFilesButton {
-    background-color: #ff7f36;
-    color: white;
-    border: 2px solid transparent;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-weight: bold;
-    font-size: 14px;
-    min-width: 120px;
-    min-height: 20px;
-    outline: none;
-    border-style: solid;
-}
-
-QWidget#WorkAreaWidget QPushButton#processFilesButton:hover {
-    background-color: #e6722f;
-}
-
-QWidget#WorkAreaWidget QPushButton#processFilesButton:pressed {
-    background-color: #cc6529;
+    background-color: #bd2130;
 }
 
 /* Run Button Styles */
