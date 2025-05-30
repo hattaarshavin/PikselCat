@@ -61,6 +61,34 @@
       </spacer>
      </item>
      <item>
+      <widget class="QComboBox" name="actionComboBox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="toolTip">
+        <string>Select action to perform on files</string>
+       </property>
+       <item>
+        <property name="text">
+         <string>Upscale 2x</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Upscale 4x</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Remove Bg</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="clearFilesButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">

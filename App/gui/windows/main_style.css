@@ -89,6 +89,76 @@ QWidget#DndAreaWidget QPushButton#openFolderButton:disabled {
     border: 2px solid transparent;
 }
 
+/* Work Area Action Dropdown */
+QWidget#WorkAreaWidget QComboBox#actionComboBox {
+    background-color: #ff7f36;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-weight: bold;
+    font-size: 12px;
+    min-width: 100px;
+    min-height: 16px;
+    outline: none;
+}
+
+QWidget#WorkAreaWidget QComboBox#actionComboBox:hover {
+    background-color: #e6722f;
+    outline: none;
+}
+
+QWidget#WorkAreaWidget QComboBox#actionComboBox:pressed {
+    background-color: #cc6529;
+    outline: none;
+}
+
+QWidget#WorkAreaWidget QComboBox#actionComboBox:focus {
+    outline: none;
+    border: none;
+}
+
+QWidget#WorkAreaWidget QComboBox#actionComboBox::drop-down {
+    border: none;
+    background-color: transparent;
+    width: 20px;
+}
+
+QWidget#WorkAreaWidget QComboBox#actionComboBox::down-arrow {
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    width: 0px;
+    height: 0px;
+    margin-right: 5px;
+}
+
+QWidget#WorkAreaWidget QComboBox#actionComboBox QAbstractItemView {
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 12px;
+    padding: 4px;
+    outline: none;
+}
+
+QWidget#WorkAreaWidget QComboBox#actionComboBox QAbstractItemView::item {
+    padding: 6px 12px;
+    border-radius: 4px;
+    margin: 1px;
+    border: none;
+    outline: none;
+}
+
+QWidget#WorkAreaWidget QComboBox#actionComboBox QAbstractItemView::item:hover {
+    background-color: rgba(255, 127, 54, 0.3);
+    outline: none;
+}
+
+QWidget#WorkAreaWidget QComboBox#actionComboBox QAbstractItemView::item:selected {
+    background-color: #ff7f36;
+    outline: none;
+}
+
 /* Work Area Buttons - Clear button only */
 QWidget#WorkAreaWidget {
     margin: 0px;
