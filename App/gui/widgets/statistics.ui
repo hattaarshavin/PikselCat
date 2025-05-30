@@ -128,10 +128,13 @@
    </item>   <item>
     <widget class="QLabel" name="helpLabel">
      <property name="text">
-      <string>&lt;a href="#help" style="color: #ff7f36; text-decoration: none;"&gt;Need help with API key or credits? Click here&lt;/a&gt;</string>
+      <string>&lt;a href="#help" style="color: #ff7f36; text-decoration: none;"&gt;Need API key setup, credit top-up, or remote technical assistance? Click here&lt;/a&gt;</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
      </property>
      <property name="openExternalLinks">
       <bool>false</bool>

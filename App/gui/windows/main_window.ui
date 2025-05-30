@@ -38,7 +38,7 @@
        </sizepolicy>
       </property>
      </widget>
-    </item>
+    </item>    
     <item>
      <widget class="QWidget" name="rightPanel" native="true">
       <property name="sizePolicy">
@@ -46,7 +46,11 @@
         <horstretch>1</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
-      </property>      <layout class="QVBoxLayout" name="rightPanelLayout">
+      </property>
+      <property name="maximumWidth">
+       <number>300</number>
+      </property>
+      <layout class="QVBoxLayout" name="rightPanelLayout">
        <property name="spacing">
         <number>10</number>
        </property>
