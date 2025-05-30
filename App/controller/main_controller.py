@@ -18,9 +18,9 @@ class MainController(QMainWindow):
         
         # Set status helper reference in ui helper for error reporting
         self.ui_helper.set_status_helper(self.status_helper)
-        
-        # Controllers for managing status updates
+          # Controllers for managing status updates
         self.dnd_handler = None
+        self.work_handler = None
         self.actions_controller = None
         
         # Use UI helper to load main UI asynchronously
@@ -142,20 +142,34 @@ class MainController(QMainWindow):
         try:
             from App.controller.dnd_handler import DndHandler
             from PySide6.QtWidgets import QPushButton
-            
-            # Find the buttons in the DnD widget
+              # Find the buttons in the DnD widget
             open_files_btn = dnd_widget.findChild(QPushButton, "openFilesButton")
             open_folder_btn = dnd_widget.findChild(QPushButton, "openFolderButton")
             
             if open_files_btn and open_folder_btn:
+                # Create work handler first
+                from App.controller.work_handler import WorkHandler
+                self.work_handler = WorkHandler(
+                    workspace_widget, 
+                    work_area_widget, 
+                    self.status_helper
+                )
+                
+                # Create DnD handler and set work handler reference
                 self.dnd_handler = DndHandler(
                     dnd_widget, 
                     workspace_widget, 
-                    work_area_widget,
                     open_files_btn, 
                     open_folder_btn,
                     self.status_helper
                 )
+                
+                # Connect the handlers
+                self.dnd_handler.set_work_handler(self.work_handler)
+                
+                # Connect work handler signals if needed
+                self.work_handler.files_cleared.connect(lambda: self.dnd_handler.files_loaded.emit([]))
+                
                 # No need to connect signals - StatusHelper is used directly
                 self.status_helper.show_ready("Drag & drop ready")
             else:

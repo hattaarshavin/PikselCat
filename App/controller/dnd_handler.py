@@ -57,21 +57,18 @@ class DragDropWidget(QWidget):
 class DndHandler(QObject):
     # Signal emitted when files are loaded
     files_loaded = Signal(list)
-    # Remove status_update signal - use StatusHelper directly
     
-    def __init__(self, dnd_widget: QWidget, workspace_widget: QWidget, work_area_widget: QWidget, open_files_btn: QPushButton, open_folder_btn: QPushButton, status_helper):
+    def __init__(self, dnd_widget: QWidget, workspace_widget: QWidget, open_files_btn: QPushButton, open_folder_btn: QPushButton, status_helper, work_handler=None):
         super().__init__()
         self.dnd_widget = dnd_widget
         self.workspace_widget = workspace_widget
-        self.work_area_widget = work_area_widget
         self.status_helper = status_helper
-        self.loaded_files = []
+        self.work_handler = work_handler
         self.last_directory = ""  # Track last used directory
         
         # Get the stacked widget for switching between DnD and Work Area
         self.stacked_widget = workspace_widget.findChild(QStackedWidget, "stackedWidget")
         self.setup_connections(open_files_btn, open_folder_btn)
-        self.setup_work_area_connections()
         self.setup_drag_drop()
         self.setup_ui()
         
@@ -80,10 +77,9 @@ class DndHandler(QObject):
             self.stacked_widget.setCurrentIndex(0)
         # Set initial status
         self.status_helper.show_ready("Drag & drop files or select files/folder")
-    
     def setup_ui(self):
-        """Setup the UI elements with icons"""
-        # Setup DnD area icons
+        """Setup the DnD area UI elements with icons"""
+        # Setup DnD area icons only
         if self.dnd_widget:
             # Find and set icon for open files button
             open_files_btn = self.dnd_widget.findChild(QPushButton, "openFilesButton")
@@ -96,35 +92,10 @@ class DndHandler(QObject):
             if open_folder_btn:
                 folder_icon = qta.icon('fa6s.folder-open', color='white')
                 open_folder_btn.setIcon(folder_icon)
-        
-        # Setup work area icons
-        if self.work_area_widget:
-            # Find and set icon for clear button
-            clear_btn = self.work_area_widget.findChild(QPushButton, "clearFilesButton")
-            if clear_btn:
-                clear_icon = qta.icon('fa6s.trash', color='white')
-                clear_btn.setIcon(clear_icon)
-            
-            # Find and set icon for process button
-            process_btn = self.work_area_widget.findChild(QPushButton, "processFilesButton")
-            if process_btn:
-                process_icon = qta.icon('fa6s.gear', color='white')
-                process_btn.setIcon(process_icon)
-    
     def setup_connections(self, open_files_btn: QPushButton, open_folder_btn: QPushButton):
         """Setup button connections"""
         open_files_btn.clicked.connect(self.open_files)
         open_folder_btn.clicked.connect(self.open_folder)
-    
-    def setup_work_area_connections(self):
-        """Setup work area button connections"""
-        if self.work_area_widget:
-            clear_btn = self.work_area_widget.findChild(QPushButton, "clearFilesButton")
-            process_btn = self.work_area_widget.findChild(QPushButton, "processFilesButton")
-            if clear_btn:
-                clear_btn.clicked.connect(self.clear_files)
-            if process_btn:
-                process_btn.clicked.connect(self.process_files)
     
     def setup_drag_drop(self):
         """Setup drag and drop functionality using proper widget overlay"""
@@ -228,61 +199,11 @@ class DndHandler(QObject):
             else:
                 self.status_helper.show_status("No files found in folder", self.status_helper.PRIORITY_NORMAL)
         # Remove cancellation message - not important
-    
     def load_files(self, files):
-        """Load files and update display"""
-        self.loaded_files = files
-        self.update_file_display()
-        self.switch_to_work_area()
+        """Load files and delegate to work handler"""
+        if self.work_handler:
+            self.work_handler.load_files(files)
         self.files_loaded.emit(files)
-        
-        self.status_helper.show_success("File loading", len(files))
-    
-    def clear_files(self):
-        """Clear all loaded files and switch back to DnD area"""
-        self.loaded_files = []
-        self.switch_to_dnd_area()
-        self.files_loaded.emit([])
-        
-        self.status_helper.show_ready("Ready for new files")
-    
-    def process_files(self):
-        """Process the loaded files - placeholder for future implementation"""
-        if self.loaded_files:
-            self.status_helper.show_processing("files", len(self.loaded_files))
-            print(f"Processing {len(self.loaded_files)} files...")
-            # Add your file processing logic here
-            self.status_helper.show_success("Processing", len(self.loaded_files))
-        else:
-            self.status_helper.show_status("No files to process", self.status_helper.PRIORITY_NORMAL)
-    
-    def switch_to_work_area(self):
-        """Switch to work area view"""
-        if self.stacked_widget:
-            self.stacked_widget.setCurrentIndex(1)  # Work area is at index 1
-            self.update_work_area_display()
-    
-    def switch_to_dnd_area(self):
-        """Switch to DnD area view"""
-        if self.stacked_widget:
-            self.stacked_widget.setCurrentIndex(0)  # DnD area is at index 0
-    
-    def update_file_display(self):
-        """Update the file list display in work area"""
-        if self.work_area_widget and self.loaded_files:
-            self.update_work_area_display()
-    
-    def update_work_area_display(self):
-        """Update the work area with loaded files"""
-        if self.work_area_widget:
-            file_label = self.work_area_widget.findChild(QLabel, "fileListLabel")
-            if file_label:
-                if self.loaded_files:
-                    file_names = [os.path.basename(f) for f in self.loaded_files]
-                    if len(file_names) > 10:
-                        display_text = f"Loaded Files ({len(file_names)}):\n" + "\n".join(file_names[:10]) + f"\n... and {len(file_names) - 10} more files"
-                    else:
-                        display_text = f"Loaded Files ({len(file_names)}):\n" + "\n".join(file_names)
-                    file_label.setText(display_text)
-                else:
-                    file_label.setText("No files loaded")
+    def set_work_handler(self, work_handler):
+        """Set the work handler reference"""
+        self.work_handler = work_handler
