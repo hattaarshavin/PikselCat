@@ -339,9 +339,14 @@ class PixelcutApiHelper(QObject):
                 credit_data = response.json()
                 credits_remaining = credit_data.get("creditsRemaining", 0)
                 
-                # SAVE COMPLETE API RESPONSE TO CONFIG
-                self.config_manager.set("pixelcut_credits", credit_data)
-                self.config_manager.save_config()
+                # SAVE COMPLETE API RESPONSE TO CONFIG - FORCE IMMEDIATE SAVE
+                # Directly set the config value without triggering auto-save
+                self.config_manager.config["pixelcut_credits"] = credit_data
+                
+                # Force immediate save and reload to ensure data persistence
+                save_success = self.config_manager.save_config()
+                if save_success:
+                    self.config_manager.reload_config()
                 
                 if credits_remaining > 0:
                     # Cache successful result with FULL API key

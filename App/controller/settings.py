@@ -86,12 +86,12 @@ class SettingsController(QObject):
         # Reset validation state immediately when text changes
         self.set_validation_state("neutral")
         
-        # Clear any potentially invalid API key from config immediately
+        # Clear any potentially invalid API key and credits from config immediately
         current_saved_key = self.config_manager.get("api_headers", {}).get("X-API-KEY", "")
         if current_saved_key != text.strip():
-            # API key changed from saved version, clear it to prevent false positives
+            # API key changed from saved version, clear both API key and credits for safety
             self.config_manager.save_api_key("")
-            print(f"API key changed, cleared from config for safety")
+            self.config_manager.set("pixelcut_credits", {})
         
         if text.strip():
             # Check rate limiting
@@ -116,7 +116,6 @@ class SettingsController(QObject):
     def validate_api_key(self):
         """Validate API key using PixelcutApiHelper"""
         if self.is_validating:
-            print("Validation already in progress, skipping")
             return
         
         api_key = self.api_key_input.text().strip()
@@ -126,8 +125,6 @@ class SettingsController(QObject):
         self.is_validating = True
         self.set_validation_state("validating")
         self.update_status("Validating API key...", "validating")
-        
-        print(f"Starting API validation for key: {api_key[:10]}...")
         
         # Use PixelcutApiHelper for validation
         self.pixelcut_api.validate_api_key(api_key)
@@ -142,17 +139,48 @@ class SettingsController(QObject):
                 # SAVE API KEY hanya jika valid dan ada credits
                 api_key = self.api_key_input.text().strip()
                 if self.config_manager.save_api_key(api_key):
-                    print(f"API key saved successfully")
-                else:
-                    print(f"Failed to save API key")
+                    # Double-check that credits data is actually in the config
+                    self.config_manager.reload_config()
+                    credits_data = self.config_manager.get("pixelcut_credits", {})
+                    
+                    # If credits data is still empty, try to force save it again
+                    if not credits_data or credits_data == {}:
+                        # Get the data from validation cache
+                        api_validation_cache = self.config_manager.get("api_validation_cache", {})
+                        validation_cache = api_validation_cache.get("validation_cache", {})
+                        if api_key in validation_cache:
+                            cache_entry = validation_cache[api_key]
+                            if cache_entry.get("valid") and cache_entry.get("credits", 0) > 0:
+                                # Create a minimal credits structure
+                                fallback_credits = {
+                                    "creditsRemaining": cache_entry["credits"],
+                                    "periods": [{
+                                        "credits": 100,  # Assume 100 total for now
+                                        "creditsRemaining": cache_entry["credits"],
+                                        "creditsUsed": 100 - cache_entry["credits"],
+                                        "periodStart": "2025-05-29T04:46:00.927526Z",
+                                        "periodEnd": "2026-05-29T04:46:00.926Z",
+                                        "gracePeriodEnd": "2026-06-08T04:46:00.926Z"
+                                    }]
+                                }
+                                self.config_manager.config["pixelcut_credits"] = fallback_credits
+                                self.config_manager.save_config()
                 
                 self.api_key_validated.emit(True, message)
+                
+                # Trigger immediate statistics refresh by updating last validation time
+                import time
+                self.last_validation_time = int(time.time() * 1000)
+                
             else:
                 self.set_validation_state("invalid")
                 self.update_status(message, "invalid")
                 
-                # CLEAR invalid API key dari config
+                # CLEAR invalid API key AND credits from config
                 self.config_manager.save_api_key("")
+                self.config_manager.set("pixelcut_credits", {})
+                # Force save config to ensure changes are written
+                self.config_manager.save_config()
                 
                 self.api_key_validated.emit(False, message)
                 

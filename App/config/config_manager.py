@@ -18,8 +18,14 @@ class ConfigManager:
         return self.config.get(key, default)
     
     def set(self, key, value):
-        """Set configuration value by key"""
+        """Set configuration value by key and force save for critical data"""
         self.config[key] = value
+        # For critical data like validation cache, save immediately but avoid double-save for credits
+        if key in ["api_headers", "api_validation_cache"]:
+            success = self.save_config()
+        elif key == "pixelcut_credits":
+            # Don't auto-save credits here - let the caller handle it to avoid conflicts
+            pass
     
     def set_nested(self, parent_key, child_key, value):
         """Set nested configuration value"""
@@ -42,7 +48,11 @@ class ConfigManager:
         """Save API key to configuration"""
         try:
             self.set_nested("api_headers", "X-API-KEY", api_key.strip())
-            return self.save_config()
+            success = self.save_config()
+            if success:
+                # Force reload to ensure we have latest data
+                self.reload_config()
+            return success
         except Exception as e:
             print(f"Error saving API key: {e}")
             return False

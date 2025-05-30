@@ -12,11 +12,12 @@ class StatisticsController(QObject):
         super().__init__()
         self.config_manager = config_manager
         self.last_data_hash = None
+        self.last_api_key_hash = None  # Track API key changes
         
-        # Setup auto-refresh timer (refresh every 10 seconds)
+        # Setup auto-refresh timer (refresh every 2 seconds for better responsiveness)
         self.refresh_timer = QTimer()
         self.refresh_timer.timeout.connect(self.check_for_updates)
-        self.refresh_timer.start(10000)  # 10 seconds interval
+        self.refresh_timer.start(2000)  # Reduced from 5000 to 2000ms
     
     def get_credits_info(self):
         """Get formatted credits information"""
@@ -277,13 +278,31 @@ class StatisticsController(QObject):
     def check_for_updates(self):
         """Check if credits data has changed and update UI if needed"""
         try:
-            # Get fresh credits data from config file and create hash
-            credits_data = self.config_manager.get_fresh_data("pixelcut_credits", {})
-            current_hash = hashlib.md5(str(credits_data).encode()).hexdigest()
+            # Get fresh data from config file - force reload
+            self.config_manager.reload_config()
             
-            # Check if data has changed
-            if self.last_data_hash != current_hash:
-                self.last_data_hash = current_hash
+            # Check for API key changes
+            api_key = self.config_manager.get("api_headers", {}).get("X-API-KEY", "")
+            api_key_hash = hashlib.md5(str(api_key).encode()).hexdigest()
+            
+            # Check for credits data changes - get full data structure
+            credits_data = self.config_manager.get("pixelcut_credits", {})
+            credits_hash = hashlib.md5(str(credits_data).encode()).hexdigest()
+            
+            # Also check validation cache changes to detect fresh validations
+            validation_cache = self.config_manager.get("api_validation_cache", {})
+            validation_hash = hashlib.md5(str(validation_cache).encode()).hexdigest()
+            
+            # Force refresh if ANY data changed
+            if (self.last_api_key_hash != api_key_hash or 
+                self.last_data_hash != credits_hash or
+                not hasattr(self, 'last_validation_hash') or
+                getattr(self, 'last_validation_hash', None) != validation_hash):
+                
+                self.last_api_key_hash = api_key_hash
+                self.last_data_hash = credits_hash
+                self.last_validation_hash = validation_hash
+                
                 self.update_credits_from_config()
                 
         except Exception as e:
@@ -293,7 +312,6 @@ class StatisticsController(QObject):
         """Force refresh of statistics data"""
         self.last_data_hash = None
         self.update_credits_from_config()
-        print("Statistics forcefully refreshed")
     
     def _on_help_clicked(self, link):
         """Handle help label click - open WhatsApp for support"""
