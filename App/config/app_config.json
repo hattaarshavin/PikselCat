@@ -1,0 +1,49 @@
+{
+    "app_name": "PikselCat",
+    "version": "1.0.0",
+    "release_date": "2025-01-20",
+    "description": "Pixelcut batch automation tool for image processing.",
+    "license": "MIT",
+    "author": "Mudrikul Hikam",
+    "company": "Desainia Studio",
+    "whatsapp": "https://chat.whatsapp.com/CMQvDxpCfP647kBBA6dRn3",
+    "repository": "https://github.com/mudrikam/PikselCat",
+    "app_icon": "pixelcat.ico",
+    "api_endpoints": {
+        "base_url": "https://api.developer.pixelcut.ai/v1",
+        "credits": "https://api.developer.pixelcut.ai/v1/credits",
+        "upscale": "https://api.developer.pixelcut.ai/v1/upscale",
+        "remove_background": "https://api.developer.pixelcut.ai/v1/remove-background"
+    },
+    "api_headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "X-API-KEY": ""
+    },
+    "pixelcut_credits": {
+        "creditsRemaining": 0,
+        "credits_remaining": 0,
+        "periods": [
+            {
+                "credits": 0,
+                "creditsRemaining": 0,
+                "creditsUsed": 0,
+                "periodStart": "0",
+                "periodEnd": "0",
+                "gracePeriodEnd": "0"
+            }
+        ]
+    },
+    "api_validation_cache": {
+        "validation_cache": {
+        },
+        "last_validation_time": 0,
+        "last_updated": 0
+    },
+    "api_daily_tracking": {
+        "last_reset_date": "2025-05-30",
+        "daily_api_calls": 0,
+        "last_fetch_time": 0,
+        "last_updated": 0
+    }
+}
