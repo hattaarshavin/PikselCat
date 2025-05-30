@@ -3,6 +3,8 @@ from PySide6.QtCore import QObject, Signal, Qt
 from PySide6.QtGui import QDragEnterEvent, QDropEvent, QDragMoveEvent, QDragLeaveEvent
 import qtawesome as qta
 import os
+import qtawesome as qta
+import os
 
 class DragDropWidget(QWidget):
     """Custom widget that handles drag and drop events properly"""
@@ -66,6 +68,10 @@ class DndHandler(QObject):
         self.work_handler = work_handler
         self.last_directory = ""  # Track last used directory
         
+        # Progress dialog and worker thread
+        self.progress_dialog = None
+        self.file_loader_worker = None
+        
         # Get the stacked widget for switching between DnD and Work Area
         self.stacked_widget = workspace_widget.findChild(QStackedWidget, "stackedWidget")
         self.setup_connections(open_files_btn, open_folder_btn)
@@ -74,9 +80,9 @@ class DndHandler(QObject):
         
         # Initially show DnD area (index 0)
         if self.stacked_widget:
-            self.stacked_widget.setCurrentIndex(0)
-        # Set initial status
-        self.status_helper.show_ready("Drag & drop files or select files/folder")
+            self.stacked_widget.setCurrentIndex(0)        # Set initial status
+        self.status_helper.show_ready("Drag & drop image files or select files/folder")
+    
     def setup_ui(self):
         """Setup the DnD area UI elements with icons"""
         # Setup DnD area icons only
@@ -84,7 +90,7 @@ class DndHandler(QObject):
             # Find and set icon for open files button
             open_files_btn = self.dnd_widget.findChild(QPushButton, "openFilesButton")
             if open_files_btn:
-                file_icon = qta.icon('fa6s.file', color='white')
+                file_icon = qta.icon('fa6s.file-image', color='white')
                 open_files_btn.setIcon(file_icon)
             
             # Find and set icon for open folder button
@@ -158,27 +164,28 @@ class DndHandler(QObject):
             self.dnd_frame.setProperty("dragHover", False)
             self.dnd_frame.style().unpolish(self.dnd_frame)
             self.dnd_frame.style().polish(self.dnd_frame)
-
+    
     def open_files(self):
-        """Open file dialog to select multiple files"""
-        # Remove opening dialog message - too verbose
+        """Open file dialog to select multiple image files"""
+        # Create image file filter for supported formats
+        image_filter = (
+            "Image Files (*.jpg *.jpeg *.png *.gif *.bmp *.tiff *.tif *.webp *.ico "
+            "*.ppm *.pgm *.pbm *.xbm *.pcx *.tga *.sgi *.eps *.im *.msp *.dds "
+            "*.j2k *.jp2 *.jpx *.jpc);;All Files (*.*)"
+        )
         
         files, _ = QFileDialog.getOpenFileNames(
             self.dnd_widget,
-            "Select Files",
+            "Select Image Files",
             self.last_directory,
-            "All Files (*.*)"
+            image_filter
         )
         if files:
             # Update last directory to the directory of the first selected file
             self.last_directory = os.path.dirname(files[0])
-            self.load_files(files)
-        # Remove cancellation message - not important
-    
+            self.start_file_loading(files)
     def open_folder(self):
         """Open folder dialog to select a folder"""
-        # Remove opening dialog message - too verbose
-        
         folder = QFileDialog.getExistingDirectory(
             self.dnd_widget,
             "Select Folder",
@@ -188,22 +195,97 @@ class DndHandler(QObject):
             # Update last directory to the selected folder
             self.last_directory = folder
             
-            # Get all files in the folder
+            # Get all files in the folder recursively
             files = []
             for root, dirs, filenames in os.walk(folder):
                 for filename in filenames:
                     files.append(os.path.join(root, filename))
             
             if files:
-                self.load_files(files)
-            else:
+                self.start_file_loading(files)
+            else:                
                 self.status_helper.show_status("No files found in folder", self.status_helper.PRIORITY_NORMAL)
-        # Remove cancellation message - not important
+    
     def load_files(self, files):
-        """Load files and delegate to work handler"""
-        if self.work_handler:
-            self.work_handler.load_files(files)
-        self.files_loaded.emit(files)
+        """Load files and delegate to work handler - now just calls start_file_loading"""
+        self.start_file_loading(files)
+    
+    def start_file_loading(self, files):
+        """Start threaded file loading with progress dialog"""
+        from App.gui.dialogs.progress_dialog import ProgressDialog
+        from App.helpers.file_loader_worker import FileLoaderWorker
+        
+        # Create and show progress dialog
+        self.progress_dialog = ProgressDialog(self.dnd_widget)
+        self.progress_dialog.cancel_requested.connect(self.cancel_file_loading)
+        
+        # Create and start worker thread
+        self.file_loader_worker = FileLoaderWorker(files)
+        self.file_loader_worker.progress_updated.connect(self.on_progress_updated)
+        self.file_loader_worker.loading_completed.connect(self.on_loading_completed)
+        self.file_loader_worker.loading_cancelled.connect(self.on_loading_cancelled)
+        
+        # Show progress dialog and start worker
+        self.progress_dialog.show()
+        self.file_loader_worker.start()
+        
+        self.status_helper.show_status("Loading image files...", self.status_helper.PRIORITY_NORMAL)
+    
+    def on_progress_updated(self, progress, status):
+        """Handle progress updates from worker thread"""
+        if self.progress_dialog:
+            self.progress_dialog.set_value(progress)
+            self.progress_dialog.set_status(status)
+    def on_loading_completed(self, valid_files):
+        """Handle completion of file validation - start widget creation"""
+        if self.progress_dialog:
+            # Don't close progress dialog yet - it will be used for widget creation
+            self.progress_dialog.set_stage("widgets", 0)
+        
+        if valid_files:
+            # Load valid files into work handler (this will start widget creation)
+            if self.work_handler:
+                # Pass the progress dialog to work handler for stage 2
+                if hasattr(self, 'progress_dialog'):
+                    self.work_handler.progress_dialog = self.progress_dialog
+                self.work_handler.load_files(valid_files)
+            self.files_loaded.emit(valid_files)
+            
+            self.status_helper.show_status(f"Creating widgets for {len(valid_files)} files...", self.status_helper.PRIORITY_NORMAL)
+        else:
+            # No valid files found - close progress dialog
+            if self.progress_dialog:
+                self.progress_dialog.close()
+                self.progress_dialog = None
+            self.status_helper.show_status("No valid image files found", self.status_helper.PRIORITY_NORMAL)
+        
+        # Clean up file validation worker
+        if self.file_loader_worker:
+            self.file_loader_worker.deleteLater()
+            self.file_loader_worker = None
+    
+    def on_loading_cancelled(self):
+        """Handle cancellation of file loading"""
+        if self.progress_dialog:
+            self.progress_dialog.close()
+            self.progress_dialog = None
+        
+        self.status_helper.show_status("File loading cancelled", self.status_helper.PRIORITY_NORMAL)
+        
+        # Clean up worker
+        if self.file_loader_worker:
+            self.file_loader_worker.deleteLater()
+            self.file_loader_worker = None
+    def cancel_file_loading(self):
+        """Cancel the file loading operation"""
+        # Cancel file validation worker
+        if self.file_loader_worker:
+            self.file_loader_worker.cancel()
+        
+        # If work handler exists and has a widget manager, cancel that too
+        if self.work_handler and hasattr(self.work_handler, 'widget_manager') and self.work_handler.widget_manager:
+            self.work_handler.widget_manager.cancel()
+    
     def set_work_handler(self, work_handler):
         """Set the work handler reference"""
         self.work_handler = work_handler

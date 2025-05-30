@@ -146,7 +146,7 @@ class LoadedItemWidget(QWidget):
                     img = img.convert('RGB')
                 
                 # Create thumbnail maintaining aspect ratio
-                img.thumbnail((24, 24), Image.Resampling.LANCZOS)
+                img.thumbnail((50, 50), Image.Resampling.LANCZOS)
                 
                 # Convert PIL image to QPixmap
                 qt_image = ImageQt.ImageQt(img)
