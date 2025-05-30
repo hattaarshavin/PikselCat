@@ -716,3 +716,52 @@ QWidget#StatisticsWidget QProgressBar#expiryProgressBar[expiryLevel="urgent"]::c
 QWidget#StatisticsWidget QProgressBar#expiryProgressBar[expiryLevel="expired"]::chunk {
     background-color: #6c757d; /* Gray for expired */
 }
+
+/* Statistics Help Label */
+QWidget#StatisticsWidget QLabel#helpLabel {
+    background-color: transparent;
+    border: none;
+    font-size: 11px;
+    padding: 5px 0px;
+    margin: 5px 0px;
+    color: rgba(138, 142, 145, 0.8);
+    outline: none;
+}
+
+QWidget#StatisticsWidget QLabel#helpLabel:focus {
+    outline: none;
+    border: none;
+    background-color: transparent;
+}
+
+QWidget#StatisticsWidget QLabel#helpLabel:pressed {
+    outline: none;
+    border: none;
+    background-color: transparent;
+}
+
+QWidget#StatisticsWidget QLabel#helpLabel a {
+    color: #ff7f36;
+    text-decoration: none;
+    outline: none;
+    border: none;
+}
+
+QWidget#StatisticsWidget QLabel#helpLabel a:hover {
+    color: #e6722f;
+    text-decoration: underline;
+    outline: none;
+    border: none;
+}
+
+QWidget#StatisticsWidget QLabel#helpLabel a:focus {
+    outline: none;
+    border: none;
+    background-color: transparent;
+}
+
+QWidget#StatisticsWidget QLabel#helpLabel a:pressed {
+    outline: none;
+    border: none;
+    background-color: transparent;
+}

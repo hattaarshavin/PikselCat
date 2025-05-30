@@ -77,3 +77,17 @@ class ConfigManager:
                 }
             ]
         })
+    
+    def reload_config(self):
+        """Reload configuration from file to get latest data"""
+        try:
+            self.load_config()
+            return True
+        except Exception as e:
+            print(f"Error reloading config: {e}")
+            return False
+    
+    def get_fresh_data(self, key, default=None):
+        """Get fresh data by reloading config first"""
+        self.reload_config()
+        return self.get(key, default)

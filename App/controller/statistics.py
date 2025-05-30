@@ -1,6 +1,9 @@
 from datetime import datetime, timedelta
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, QTimer
 import json
+import hashlib
+import json
+import hashlib
 
 class StatisticsController(QObject):
     credits_updated = Signal(dict)
@@ -8,6 +11,12 @@ class StatisticsController(QObject):
     def __init__(self, config_manager):
         super().__init__()
         self.config_manager = config_manager
+        self.last_data_hash = None
+        
+        # Setup auto-refresh timer (refresh every 10 seconds)
+        self.refresh_timer = QTimer()
+        self.refresh_timer.timeout.connect(self.check_for_updates)
+        self.refresh_timer.start(10000)  # 10 seconds interval
     
     def get_credits_info(self):
         """Get formatted credits information"""
@@ -159,14 +168,20 @@ class StatisticsController(QObject):
     def update_credits_from_config(self):
         """Update credits info and emit signal"""
         credits_info = self.get_credits_info()
-        self.credits_updated.emit(credits_info)
-    
+        self.credits_updated.emit(credits_info)    
     def setup_ui_connections(self, ui_widget):
         """Setup connections between controller and UI elements"""
         self.ui_widget = ui_widget
         
         # Connect signal to update method
         self.credits_updated.connect(self.update_ui_display)
+        
+        # Connect help label click and disable focus
+        if hasattr(self.ui_widget, 'helpLabel'):
+            self.ui_widget.helpLabel.linkActivated.connect(self._on_help_clicked)
+            # Disable focus policy to prevent dotted outline
+            from PySide6.QtCore import Qt
+            self.ui_widget.helpLabel.setFocusPolicy(Qt.NoFocus)
         
         # Initial update
         self.update_credits_from_config()
@@ -258,4 +273,37 @@ class StatisticsController(QObject):
         
         self.ui_widget.expiryProgressBar.setProperty("expiryLevel", color_class)
         self.ui_widget.expiryProgressBar.style().unpolish(self.ui_widget.expiryProgressBar)
-        self.ui_widget.expiryProgressBar.style().polish(self.ui_widget.expiryProgressBar)
+        self.ui_widget.expiryProgressBar.style().polish(self.ui_widget.expiryProgressBar)    
+    def check_for_updates(self):
+        """Check if credits data has changed and update UI if needed"""
+        try:
+            # Get fresh credits data from config file and create hash
+            credits_data = self.config_manager.get_fresh_data("pixelcut_credits", {})
+            current_hash = hashlib.md5(str(credits_data).encode()).hexdigest()
+            
+            # Check if data has changed
+            if self.last_data_hash != current_hash:
+                self.last_data_hash = current_hash
+                self.update_credits_from_config()
+                
+        except Exception as e:
+            print(f"Error checking for updates: {e}")
+    
+    def force_refresh(self):
+        """Force refresh of statistics data"""
+        self.last_data_hash = None
+        self.update_credits_from_config()
+        print("Statistics forcefully refreshed")
+    
+    def _on_help_clicked(self, link):
+        """Handle help label click - open WhatsApp for support"""
+        try:
+            whatsapp_url = self.config_manager.get("whatsapp", "")
+            if whatsapp_url:
+                from App.helpers._url_helper import UrlHelper
+                UrlHelper.open_whatsapp(whatsapp_url)
+                print("Opening WhatsApp for support...")
+            else:
+                print("WhatsApp URL not found in config")
+        except Exception as e:
+            print(f"Error opening WhatsApp: {e}")
