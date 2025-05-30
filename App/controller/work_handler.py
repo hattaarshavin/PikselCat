@@ -19,11 +19,20 @@ class WorkHandler(QObject):
         self.loaded_files = []
         self.file_widgets = []  # Store references to LoadedItemWidget instances
         
+        # Initialize Pixelcut API helper (tapi JANGAN fetch dan JANGAN connect signals di sini)
+        if self.config_manager:
+            from App.helpers.pixelcut_api import PixelcutApiHelper
+            self.pixelcut_api = PixelcutApiHelper(self.config_manager)
+            # HAPUS connect signals di sini - akan di-connect saat load files
+        else:
+            self.pixelcut_api = None
+        
         # Get the stacked widget for switching between DnD and Work Area
         self.stacked_widget = workspace_widget.findChild(QStackedWidget, "stackedWidget")
         
         self.setup_ui()
         self.setup_connections()
+
     def setup_ui(self):
         """Setup the work area UI elements with icons"""
         if self.work_area_widget:
@@ -69,13 +78,31 @@ class WorkHandler(QObject):
             action_combo = self.work_area_widget.findChild(QComboBox, "actionComboBox")
             if action_combo:
                 action_combo.currentTextChanged.connect(self.update_cost_calculation)
-    
+
     def load_files(self, files):
-        """Load files into work area with two-stage loading process"""
+        """Load files into work area and fetch credits HANYA DI SINI"""
         self.loaded_files = files
+        
+        # Connect credit signals HANYA saat files di-load
+        if self.pixelcut_api:
+            # Connect signals
+            self.pixelcut_api.credits_updated.connect(self.on_credits_updated)
+            self.pixelcut_api.credits_error.connect(self.on_credits_error)
+            
+            # Fetch credits HANYA saat files di-load
+            self.pixelcut_api.fetch_credits()
         
         # Stage 1 is already complete (file validation), now do Stage 2 (widget creation)
         self.start_widget_creation()
+
+    def on_credits_updated(self, credits_remaining):
+        """Handle updated credits from API"""
+        self.update_cost_calculation()  # Recalculate with fresh credit data
+
+    def on_credits_error(self, error_message):
+        """Handle credits fetch error"""
+        self.update_cost_calculation()  # Still update with cached data
+
     def start_widget_creation(self):
         """Start the widget creation process with progress tracking"""
         if not self.loaded_files:
@@ -221,6 +248,14 @@ class WorkHandler(QObject):
     
     def clear_files(self):
         """Clear all loaded files and switch back to DnD area"""
+        # Disconnect credit signals saat clear files
+        if self.pixelcut_api:
+            try:
+                self.pixelcut_api.credits_updated.disconnect(self.on_credits_updated)
+                self.pixelcut_api.credits_error.disconnect(self.on_credits_error)
+            except:
+                pass  # Already disconnected
+        
         # Cancel any ongoing widget creation
         if hasattr(self, 'widget_manager') and self.widget_manager:
             self.widget_manager.cancel()
@@ -313,27 +348,64 @@ class WorkHandler(QObject):
         else:
             return 0   # Default cost
     def update_cost_calculation(self):
-        """Update estimated cost based on current action and widget count (real-time)"""
+        """Update estimated cost and remaining credits calculation"""
         if not self.work_area_widget:
             return
             
         action_combo = self.work_area_widget.findChild(QComboBox, "actionComboBox")
         cost_label = self.work_area_widget.findChild(QLabel, "estimatedCostLabel")
+        remaining_label = self.work_area_widget.findChild(QLabel, "remainingCreditLabel")
         
-        if action_combo and cost_label:
+        if action_combo and cost_label and remaining_label:
             current_action = action_combo.currentText()
-            # Use only actual widget count for true real-time calculation
             widget_count = len(self.file_widgets)
             cost_per_file = self.get_cost_per_action(current_action)
-            current_cost = widget_count * cost_per_file
+            estimated_cost = widget_count * cost_per_file
             
+            # Update estimated cost label
             if widget_count > 0:
-                # Show cost for widgets that are actually created
-                cost_label.setText(f"Estimated cost: {current_cost} Credit for {widget_count} files")
+                cost_label.setText(f"Estimated cost: {estimated_cost} Credit for {widget_count} files")
+                
+                # Get current credits HANYA jika ada files
+                current_credits = 0
+                if self.pixelcut_api:
+                    current_credits = self.pixelcut_api.get_current_credits()
+                else:
+                    # Fallback to config cache
+                    current_credits = self.config_manager.get("pixelcut_credits", {}).get("creditsRemaining", 0) if self.config_manager else 0
+                
+                # Calculate remaining credits after operation
+                remaining_after = current_credits - estimated_cost
+                
+                # Update remaining credits label with insufficient credit check
+                if remaining_after < 0:
+                    remaining_label.setText("Insufficient Pixelcut Generative Credits")
+                    remaining_label.setStyleSheet("color: #dc3545; font-size: 12px; font-weight: bold; margin: 2px;")
+                else:
+                    remaining_label.setText(f"Remaining credit after process: {remaining_after} Credit")
+                    remaining_label.setStyleSheet("color: #28a745; font-size: 12px; font-weight: normal; margin: 2px;")
             else:
-                # No widgets created yet
+                # Jika tidak ada files, tampilkan default
                 cost_label.setText("Estimated cost: 0 Credit for 0 files")
-    
+                remaining_label.setText("Load files to see credit calculation")
+                remaining_label.setStyleSheet("color: #17a2b8; font-size: 12px; font-style: italic; margin: 2px;")
+
+    def can_process_files(self):
+        """Check if current credits are sufficient for processing"""
+        if not self.pixelcut_api:
+            return False
+            
+        action_combo = self.work_area_widget.findChild(QComboBox, "actionComboBox")
+        if action_combo:
+            current_action = action_combo.currentText()
+            widget_count = len(self.file_widgets)
+            cost_per_file = self.get_cost_per_action(current_action)
+            estimated_cost = widget_count * cost_per_file
+            
+            return self.pixelcut_api.has_sufficient_credits(estimated_cost)
+        
+        return False
+
     def open_whatsapp(self):
         """Open WhatsApp group using URL from config"""
         if self.config_manager:

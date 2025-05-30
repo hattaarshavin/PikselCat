@@ -1,17 +1,19 @@
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QWidget, QFileDialog
 from PySide6.QtCore import QObject, Signal
 import qtawesome as qta
+import os
 
 class ActionsController(QObject):
     # Signals for when buttons are clicked
     run_clicked = Signal()
     stop_clicked = Signal()
-    # Remove status_update signal - use StatusHelper directly
+    output_destination_changed = Signal(str)  # Emit when output path changes
     
     def __init__(self, actions_widget: QWidget, status_helper):
         super().__init__()
         self.actions_widget = actions_widget
         self.status_helper = status_helper
+        self.output_path = ""  # Store selected output path
         self.setup_ui()
         self.connect_signals()
         # Set initial status
@@ -33,6 +35,13 @@ class ActionsController(QObject):
                 # Add stop icon using QtAwesome fa6s
                 stop_icon = qta.icon('fa6s.stop', color='white')
                 stop_button.setIcon(stop_icon)
+            
+            # Find the output destination button
+            output_button = self.actions_widget.findChild(QWidget, "outputDestinationButton")
+            if output_button:
+                # Add folder icon using QtAwesome fa6s
+                folder_icon = qta.icon('fa6s.folder-open', color='white')
+                output_button.setIcon(folder_icon)
     
     def connect_signals(self):
         """Connect button signals to slots"""
@@ -44,9 +53,38 @@ class ActionsController(QObject):
             stop_button = self.actions_widget.findChild(QWidget, "stopButton")
             if stop_button:
                 stop_button.clicked.connect(self.on_stop_clicked)
+            
+            # Connect output destination button
+            output_button = self.actions_widget.findChild(QWidget, "outputDestinationButton")
+            if output_button:
+                output_button.clicked.connect(self.on_output_destination_clicked)
     
     def on_run_clicked(self):
-        """Handle run button click"""
+        """Handle run button click with credit checking"""
+        # Check if we have a work handler to validate credits
+        work_handler = None
+        try:
+            # Try to get work handler reference from main controller
+            from App.controller.main_controller import MainController
+            import weakref
+            for obj in weakref.get_objects():
+                if isinstance(obj, MainController):
+                    work_handler = obj.work_handler
+                    break
+        except:
+            pass
+        
+        # Check credits before processing
+        if work_handler and hasattr(work_handler, 'can_process_files'):
+            if not work_handler.can_process_files():
+                self.status_helper.show_status("Insufficient Pixelcut Generative Credits", self.status_helper.PRIORITY_HIGH)
+                return
+        
+        # Check if output destination is set
+        if not self.output_path:
+            self.status_helper.show_status("Please select output destination first", self.status_helper.PRIORITY_HIGH)
+            return
+        
         self.status_helper.show_processing("execution")
         print("Run button clicked!")
         self.set_running_state(True)
@@ -60,6 +98,63 @@ class ActionsController(QObject):
         self.set_running_state(False)
         self.stop_clicked.emit()
         self.status_helper.show_ready("Process stopped")
+    
+    def on_output_destination_clicked(self):
+        """Handle output destination button click"""
+        folder = QFileDialog.getExistingDirectory(
+            self.actions_widget,
+            "Select Output Folder",
+            self.output_path if self.output_path else os.path.expanduser("~")
+        )
+        
+        if folder:
+            self.output_path = folder
+            self.update_output_path_label()
+            self.output_destination_changed.emit(folder)
+            self.status_helper.show_status(f"Output folder set: {self.truncate_path(folder)}", self.status_helper.PRIORITY_NORMAL)
+    
+    def update_output_path_label(self):
+        """Update the output path label with truncated path"""
+        path_label = self.actions_widget.findChild(QWidget, "outputPathLabel")
+        if path_label:
+            if self.output_path:
+                truncated_path = self.truncate_path(self.output_path)
+                path_label.setText(truncated_path)
+                path_label.setStyleSheet("color: #ff7f36; font-size: 11px; font-weight: bold; margin: 2px;")
+            else:
+                path_label.setText("No output folder selected")
+                path_label.setStyleSheet("color: rgba(138, 142, 145, 0.8); font-size: 11px; font-style: italic; margin: 2px;")
+    
+    def truncate_path(self, path):
+        """Truncate path to show drive and last two folders"""
+        if not path:
+            return ""
+        
+        # Normalize path separators
+        path = os.path.normpath(path)
+        parts = path.split(os.sep)
+        
+        if len(parts) <= 3:
+            # Short path, return as is
+            return path
+        else:
+            # Long path: show drive + ... + parent folder + current folder
+            drive = parts[0] + os.sep  # e.g., "D:\"
+            parent_folder = parts[-2] if len(parts) > 1 else ""
+            current_folder = parts[-1]
+            
+            return f"{drive}...{os.sep}{parent_folder}{os.sep}{current_folder}"
+    
+    def get_output_path(self):
+        """Get the current output path"""
+        return self.output_path
+    
+    def set_output_path(self, path):
+        """Set the output path programmatically"""
+        if os.path.isdir(path):
+            self.output_path = path
+            self.update_output_path_label()
+            self.output_destination_changed.emit(path)
     
     def set_running_state(self, is_running: bool):
         """Set the state of buttons based on running status"""
