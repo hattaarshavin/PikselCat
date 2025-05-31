@@ -223,12 +223,13 @@ class MainController(QMainWindow):
                 self.status_helper.show_error("No files loaded for processing")
                 return
             
-            # Get file widgets from work handler
+            # Get file widgets from work handler (it's a list, not dict)
             file_widgets = self.work_handler.file_widgets
             if not file_widgets:
                 self.status_helper.show_error("No file widgets available")
                 return
-              # Get selected action from work handler
+              
+            # Get selected action from work handler
             selected_action = self.work_handler.get_selected_action()
             if not selected_action:
                 self.status_helper.show_error("No action selected")
@@ -240,21 +241,154 @@ class MainController(QMainWindow):
                 self.status_helper.show_error("No output destination selected")
                 return
             
-            # Set file widgets in processing manager
-            self.processing_manager.set_file_widgets(file_widgets)
-                
-            # Start processing with the processing manager
-            self.processing_manager.start_processing(files, selected_action, output_path)
+            # Create and start the processor worker
+            from App.helpers.pixelcut_processor import PixelcutProcessorWorker
+            self.processing_worker = PixelcutProcessorWorker(
+                self.config_manager, 
+                files, 
+                selected_action, 
+                output_path
+            )
+            
+            # Connect signals
+            self.processing_worker.file_processing_started.connect(self.on_file_processing_started)
+            self.processing_worker.file_processed.connect(self.on_file_processed)
+            self.processing_worker.progress_updated.connect(self.on_progress_updated)
+            self.processing_worker.processing_completed.connect(self.on_processing_completed)
+            self.processing_worker.processing_cancelled.connect(self.on_processing_cancelled)
+            self.processing_worker.error_occurred.connect(self.on_processing_error)
+            
+            # Set all file widgets to processing state - file_widgets is a list
+            for widget in file_widgets:
+                widget.set_processing_state("idle")
+            
+            # Start processing
+            self.processing_worker.start()
+            self.status_helper.show_status(f"Processing {len(files)} files with {selected_action}...", self.status_helper.PRIORITY_NORMAL)
+            
+            # Update actions controller to show stop button
+            if hasattr(self.actions_controller, 'set_processing_state'):
+                self.actions_controller.set_processing_state(True)
             
         except Exception as e:
-            self.status_helper.show_error(f"Failed to start processing: {str(e)}")
+            # Print to console for debugging, don't show in status bar
+            print(f"Failed to start processing: {str(e)}")
+            print(f"Exception type: {type(e)}")
+            print(f"Work handler type: {type(self.work_handler.file_widgets) if self.work_handler else 'None'}")
+            if self.work_handler and hasattr(self.work_handler, 'file_widgets'):
+                print(f"File widgets content: {self.work_handler.file_widgets}")
+            import traceback
+            print(f"Full traceback: {traceback.format_exc()}")
             
     def stop_processing(self):
         """Stop the current processing workflow"""
         try:
-            if hasattr(self, 'processing_manager'):
-                self.processing_manager.stop_processing()
+            if hasattr(self, 'processing_worker') and self.processing_worker:
+                if self.processing_worker.isRunning():
+                    self.processing_worker.cancel()
+                    self.status_helper.show_warning("Stopping processing...")
+                    
+                    # Reset file widgets to idle state - file_widgets is a list
+                    if self.work_handler and hasattr(self.work_handler, 'file_widgets'):
+                        for widget in self.work_handler.file_widgets:
+                            widget.set_processing_state("idle")
+                    
+                    # Update actions controller
+                    if hasattr(self.actions_controller, 'set_processing_state'):
+                        self.actions_controller.set_processing_state(False)
+                else:
+                    self.status_helper.show_warning("No active processing to stop")
             else:
                 self.status_helper.show_warning("No processing to stop")
         except Exception as e:
             self.status_helper.show_error(f"Failed to stop processing: {str(e)}")
+    
+    def on_file_processing_started(self, file_path):
+        """Handle when a file starts processing"""
+        try:
+            if self.work_handler and hasattr(self.work_handler, 'file_widgets'):
+                # Find widget by file path since file_widgets is a list
+                for widget in self.work_handler.file_widgets:
+                    if widget.get_file_path() == file_path:
+                        widget.set_processing_state("processing")
+                        print(f"Started processing: {file_path}")
+                        break
+        except Exception as e:
+            print(f"Error updating file processing state: {e}")
+    
+    def on_file_processed(self, input_file, output_file, success):
+        """Handle when a file is processed"""
+        try:
+            if self.work_handler and hasattr(self.work_handler, 'file_widgets'):
+                # Find widget by file path since file_widgets is a list
+                for widget in self.work_handler.file_widgets:
+                    if widget.get_file_path() == input_file:
+                        if success:
+                            widget.set_processing_state("success")
+                            print(f"Successfully processed: {input_file} -> {output_file}")
+                        else:
+                            widget.set_processing_state("error")
+                            print(f"Failed to process: {input_file}")
+                        break
+        except Exception as e:
+            print(f"Error updating file processed state: {e}")
+    
+    def on_progress_updated(self, progress, message):
+        """Handle progress updates"""
+        try:
+            # Only update status bar for important milestones, not every progress update
+            if progress % 25 == 0 or progress >= 100:  # Only at 0%, 25%, 50%, 75%, 100%
+                self.status_helper.show_status(message, self.status_helper.PRIORITY_NORMAL)
+            else:
+                print(f"Progress: {progress}% - {message}")
+        except Exception as e:
+            print(f"Error updating progress: {e}")
+    
+    def on_processing_completed(self, processed_count, failed_count):
+        """Handle processing completion"""
+        try:
+            message = f"Processing completed: {processed_count} successful, {failed_count} failed"
+            if failed_count == 0:
+                self.status_helper.show_success(message)
+            else:
+                self.status_helper.show_warning(message)
+            
+            # Update actions controller
+            if hasattr(self.actions_controller, 'set_processing_state'):
+                self.actions_controller.set_processing_state(False)
+            
+            # Clean up worker
+            if hasattr(self, 'processing_worker'):
+                self.processing_worker = None
+        except Exception as e:
+            print(f"Error handling processing completion: {e}")
+    
+    def on_processing_cancelled(self):
+        """Handle processing cancellation"""
+        try:
+            self.status_helper.show_warning("Processing cancelled")
+            
+            # Update actions controller
+            if hasattr(self.actions_controller, 'set_processing_state'):
+                self.actions_controller.set_processing_state(False)
+            
+            # Clean up worker
+            if hasattr(self, 'processing_worker'):
+                self.processing_worker = None
+        except Exception as e:
+            print(f"Error handling processing cancellation: {e}")
+    
+    def on_processing_error(self, error_message):
+        """Handle processing errors"""
+        try:
+            self.status_helper.show_error(f"Processing error: {error_message}")
+            
+            # Update actions controller
+            if hasattr(self.actions_controller, 'set_processing_state'):
+                self.actions_controller.set_processing_state(False)
+            
+            # Clean up worker
+            if hasattr(self, 'processing_worker'):
+                self.processing_worker = None
+        except Exception as e:
+            print(f"Error handling processing error: {e}")
