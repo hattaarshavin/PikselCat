@@ -340,6 +340,16 @@ class WorkHandler(QObject):
         """Get the count of loaded files"""
         return len(self.loaded_files)
     
+    def get_selected_action(self):
+        """Get the currently selected action from the combo box"""
+        if not self.work_area_widget:
+            return None
+            
+        action_combo = self.work_area_widget.findChild(QComboBox, "actionComboBox")
+        if action_combo:
+            return action_combo.currentText()
+        return None
+
     def get_cost_per_action(self, action_text):
         """Get cost per file for the selected action"""
         if "Upscale" in action_text:

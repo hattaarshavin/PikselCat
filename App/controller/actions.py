@@ -207,6 +207,10 @@ class ActionsController(QObject):
         """Get the current output path"""
         return self.output_path
     
+    def get_output_destination(self):
+        """Get the current output destination (alias for get_output_path)"""
+        return self.output_path
+    
     def set_output_path(self, path):
         """Set the output path programmatically"""
         if os.path.isdir(path):
@@ -229,3 +233,9 @@ class ActionsController(QObject):
                     # When not running: enable run button, disable stop button
                     run_button.setEnabled(True)
                     stop_button.setEnabled(False)
+    
+    def get_selected_action(self):
+        """Get the selected action - this should be retrieved from work handler"""
+        # Note: The action selection is handled by work_handler's actionComboBox
+        # This method is kept for API consistency but actual action should come from work_handler
+        return None

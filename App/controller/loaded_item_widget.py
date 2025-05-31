@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QLabel, QSizePolicy, QHBoxLayout, QVBoxLayout, QFrame, QPushButton
+from PySide6.QtWidgets import QWidget, QLabel, QSizePolicy, QHBoxLayout, QVBoxLayout, QFrame, QPushButton, QProgressBar
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap
 import qtawesome as qta
@@ -68,11 +68,19 @@ class LoadedItemWidget(QWidget):
         self.file_path_label.setObjectName("file_path_label")
         self.file_path_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.file_path_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        self.file_path_label.setWordWrap(True)  # Allow text wrapping for long paths
-          # Add labels to text layout
+        self.file_path_label.setWordWrap(True)  # Allow text wrapping for long paths        # Add labels to text layout
         text_layout.addWidget(self.file_name_label)
         text_layout.addWidget(self.file_size_label)
         text_layout.addWidget(self.file_path_label)
+        
+        # Add progress bar (initially hidden)
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setObjectName("itemProgressBar")
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(False)
+        self.progress_bar.setVisible(False)  # Hidden by default
+        text_layout.addWidget(self.progress_bar)
         
         # Add widgets to main layout
         main_layout.addWidget(self.file_icon_label)
@@ -209,7 +217,48 @@ class LoadedItemWidget(QWidget):
     def get_file_path(self):
         """Get the file path"""
         return self.file_path
-    
     def on_close_clicked(self):
         """Handle close button click"""
         self.remove_requested.emit(self.file_path)
+    
+    def set_processing_state(self, state):
+        """Set the processing state of the widget
+        Args:
+            state (str): 'idle', 'processing', 'success', 'error'
+        """
+        # Update frame property for CSS styling
+        if state == "idle":
+            self.item_frame.setProperty("processingState", "")
+            self.progress_bar.setVisible(False)
+        elif state == "processing":
+            self.item_frame.setProperty("processingState", "processing")
+            self.progress_bar.setVisible(True)
+            self.progress_bar.setValue(0)
+        elif state == "success":
+            self.item_frame.setProperty("processingState", "success")
+            self.progress_bar.setValue(100)
+            # Keep progress bar visible to show completion
+        elif state == "error":
+            self.item_frame.setProperty("processingState", "error")
+            self.progress_bar.setValue(100)
+            # Keep progress bar visible to show error
+        
+        # Force style refresh
+        self.item_frame.style().unpolish(self.item_frame)
+        self.item_frame.style().polish(self.item_frame)
+    
+    def update_progress(self, value):
+        """Update progress bar value
+        Args:
+            value (int): Progress value (0-100)
+        """
+        if self.progress_bar:
+            self.progress_bar.setValue(value)
+    
+    def show_progress_bar(self, show=True):
+        """Show or hide the progress bar
+        Args:
+            show (bool): Whether to show the progress bar
+        """
+        if self.progress_bar:
+            self.progress_bar.setVisible(show)

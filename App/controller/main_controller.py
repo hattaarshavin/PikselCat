@@ -107,12 +107,18 @@ class MainController(QMainWindow):
                 actions_widget = self.ui_helper.load_widget_safely(
                     self.BASE_DIR, "actions.ui", actions_container
                 )
-                if actions_widget:                    
+                if actions_widget:
                     from App.controller.actions import ActionsController
                     self.actions_controller = ActionsController(actions_widget, self.status_helper)
-                    
-                    # Pass config_manager to actions controller
+                      # Pass config_manager to actions controller
                     self.actions_controller.set_config_manager(self.config_manager)
+                    
+                    # Initialize worker variable for processing
+                    self.processing_worker = None
+                    
+                    # Connect run/stop signals directly to methods
+                    self.actions_controller.run_clicked.connect(self.start_processing)
+                    self.actions_controller.stop_clicked.connect(self.stop_processing)
                     
                     # Setup settings button icon
                     from PySide6.QtWidgets import QPushButton
@@ -203,3 +209,52 @@ class MainController(QMainWindow):
         center_point = screen.center()
         window_geometry.moveCenter(center_point)
         self.move(window_geometry.topLeft())
+
+    def start_processing(self):
+        """Start the Pixelcut processing workflow"""
+        try:
+            # Get loaded files from work handler            
+            if not self.work_handler:
+                self.status_helper.show_error("Work handler not initialized")
+                return
+                
+            files = self.work_handler.get_loaded_files()
+            if not files:
+                self.status_helper.show_error("No files loaded for processing")
+                return
+            
+            # Get file widgets from work handler
+            file_widgets = self.work_handler.file_widgets
+            if not file_widgets:
+                self.status_helper.show_error("No file widgets available")
+                return
+              # Get selected action from work handler
+            selected_action = self.work_handler.get_selected_action()
+            if not selected_action:
+                self.status_helper.show_error("No action selected")
+                return
+            
+            # Get output destination from actions controller
+            output_path = self.actions_controller.get_output_destination()
+            if not output_path:
+                self.status_helper.show_error("No output destination selected")
+                return
+            
+            # Set file widgets in processing manager
+            self.processing_manager.set_file_widgets(file_widgets)
+                
+            # Start processing with the processing manager
+            self.processing_manager.start_processing(files, selected_action, output_path)
+            
+        except Exception as e:
+            self.status_helper.show_error(f"Failed to start processing: {str(e)}")
+            
+    def stop_processing(self):
+        """Stop the current processing workflow"""
+        try:
+            if hasattr(self, 'processing_manager'):
+                self.processing_manager.stop_processing()
+            else:
+                self.status_helper.show_warning("No processing to stop")
+        except Exception as e:
+            self.status_helper.show_error(f"Failed to stop processing: {str(e)}")
