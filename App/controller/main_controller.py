@@ -287,15 +287,14 @@ class MainController(QMainWindow):
                 if self.processing_worker.isRunning():
                     self.processing_worker.cancel()
                     self.status_helper.show_warning("Stopping processing...")
-                    
-                    # Reset file widgets to idle state - file_widgets is a list
+                      # Reset file widgets to idle state - file_widgets is a list
                     if self.work_handler and hasattr(self.work_handler, 'file_widgets'):
                         for widget in self.work_handler.file_widgets:
                             widget.set_processing_state("idle")
                     
-                    # Update actions controller
-                    if hasattr(self.actions_controller, 'set_processing_state'):
-                        self.actions_controller.set_processing_state(False)
+                    # Set completed state - both buttons disabled
+                    if hasattr(self.actions_controller, 'set_processing_completed_state'):
+                        self.actions_controller.set_processing_completed_state()
                 else:
                     self.status_helper.show_warning("No active processing to stop")
             else:
@@ -343,7 +342,6 @@ class MainController(QMainWindow):
                 print(f"Progress: {progress}% - {message}")
         except Exception as e:
             print(f"Error updating progress: {e}")
-    
     def on_processing_completed(self, processed_count, failed_count):
         """Handle processing completion"""
         try:
@@ -353,9 +351,9 @@ class MainController(QMainWindow):
             else:
                 self.status_helper.show_warning(message)
             
-            # Update actions controller
-            if hasattr(self.actions_controller, 'set_processing_state'):
-                self.actions_controller.set_processing_state(False)
+            # Set completed state - both buttons disabled until new files loaded
+            if hasattr(self.actions_controller, 'set_processing_completed_state'):
+                self.actions_controller.set_processing_completed_state()
             
             # Clean up worker
             if hasattr(self, 'processing_worker'):
@@ -368,9 +366,9 @@ class MainController(QMainWindow):
         try:
             self.status_helper.show_warning("Processing cancelled")
             
-            # Update actions controller
-            if hasattr(self.actions_controller, 'set_processing_state'):
-                self.actions_controller.set_processing_state(False)
+            # Set completed state - both buttons disabled until new files loaded
+            if hasattr(self.actions_controller, 'set_processing_completed_state'):
+                self.actions_controller.set_processing_completed_state()
             
             # Clean up worker
             if hasattr(self, 'processing_worker'):

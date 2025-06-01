@@ -405,21 +405,25 @@ class WorkHandler(QObject):
                 remaining_label.setText("Load files to see credit calculation")
                 remaining_label.setStyleSheet("color: #17a2b8; font-size: 12px; font-style: italic; margin: 2px;")
                 # Disable run button when no files
-                self._update_run_button_state(False)
-
+                self._update_run_button_state(False)    
     def _update_run_button_state(self, enabled):
         """Update run button enabled/disabled state"""
         try:
-            # Get actions controller to update run button
+            # Get actions controller to update run button state properly
             from App.controller.main_controller import MainController
             import gc
             for obj in gc.get_objects():
                 if isinstance(obj, MainController) and hasattr(obj, 'actions_controller'):
-                    actions_widget = obj.actions_controller.actions_widget
-                    if actions_widget:
-                        run_button = actions_widget.findChild(QWidget, "runButton")
-                        if run_button:
-                            run_button.setEnabled(enabled)
+                    # Use set_ready_state for proper button state management
+                    if hasattr(obj.actions_controller, 'set_ready_state'):
+                        obj.actions_controller.set_ready_state(enabled)
+                    else:
+                        # Fallback to direct button access
+                        actions_widget = obj.actions_controller.actions_widget
+                        if actions_widget:
+                            run_button = actions_widget.findChild(QWidget, "runButton")
+                            if run_button:
+                                run_button.setEnabled(enabled)
                     break
         except Exception as e:
             print(f"Error updating run button state: {e}")

@@ -50,20 +50,24 @@ class DndHandler(QObject):
         
         # Disable run button initially since we're in DnD mode
         self._update_run_button_state(False)
-    
     def _update_run_button_state(self, enabled):
         """Update run button enabled/disabled state"""
         try:
-            # Get actions controller to update run button
+            # Get actions controller to update run button state properly
             from App.controller.main_controller import MainController
             import gc
             for obj in gc.get_objects():
                 if isinstance(obj, MainController) and hasattr(obj, 'actions_controller'):
-                    actions_widget = obj.actions_controller.actions_widget
-                    if actions_widget:
-                        run_button = actions_widget.findChild(QWidget, "runButton")
-                        if run_button:
-                            run_button.setEnabled(enabled)
+                    # Use set_ready_state for proper button state management
+                    if hasattr(obj.actions_controller, 'set_ready_state'):
+                        obj.actions_controller.set_ready_state(enabled)
+                    else:
+                        # Fallback to direct button access
+                        actions_widget = obj.actions_controller.actions_widget
+                        if actions_widget:
+                            run_button = actions_widget.findChild(QWidget, "runButton")
+                            if run_button:
+                                run_button.setEnabled(enabled)
                     break
         except Exception as e:
             print(f"Error updating run button state: {e}")

@@ -251,8 +251,7 @@ class ActionsController(QObject):
         # Set path immediately without any validation
         self.output_path = path
         self.update_output_path_label()
-        self.output_destination_changed.emit(path)
-
+        self.output_destination_changed.emit(path)    
     def set_running_state(self, is_running: bool):
         """Set the state of buttons based on running status"""
         if self.actions_widget:
@@ -265,10 +264,37 @@ class ActionsController(QObject):
                     run_button.setEnabled(False)
                     stop_button.setEnabled(True)
                 else:
-                    # When not running: enable run button, disable stop button
-                    run_button.setEnabled(True)
+                    # When stopped/completed: both buttons disabled (initial state)
+                    run_button.setEnabled(False)
                     stop_button.setEnabled(False)
     
+    def set_ready_state(self, has_files: bool):
+        """Set button state when ready for processing"""
+        if self.actions_widget:
+            run_button = self.actions_widget.findChild(QWidget, "runButton")
+            stop_button = self.actions_widget.findChild(QWidget, "stopButton")
+            
+            if run_button and stop_button:
+                if has_files:
+                    # Files loaded: enable run button, keep stop disabled
+                    run_button.setEnabled(True)
+                    stop_button.setEnabled(False)
+                else:
+                    # No files: both disabled
+                    run_button.setEnabled(False)
+                    stop_button.setEnabled(False)
+    
+    def set_processing_completed_state(self):
+        """Set button state when processing is completed - both buttons disabled"""
+        if self.actions_widget:
+            run_button = self.actions_widget.findChild(QWidget, "runButton")
+            stop_button = self.actions_widget.findChild(QWidget, "stopButton")
+            
+            if run_button and stop_button:
+                # After processing: both disabled until new files loaded
+                run_button.setEnabled(False)
+                stop_button.setEnabled(False)
+
     def get_selected_action(self):
         """Get the selected action - this should be retrieved from work handler"""
         # Note: The action selection is handled by work_handler's actionComboBox
