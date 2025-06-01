@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QWidget, QLabel, QFileDialog, QPushButton, QStackedWidget
-from PySide6.QtCore import QObject, Signal, Qt
+from PySide6.QtCore import QObject, Signal, Qt, QTimer
 from PySide6.QtGui import QDragEnterEvent, QDropEvent, QDragMoveEvent, QDragLeaveEvent
 import qtawesome as qta
 import os
@@ -15,6 +15,12 @@ class DndHandler(QObject):
         self.status_helper = status_helper
         self.work_handler = work_handler
         self.last_directory = ""  # Track last used directory
+        
+        # File caching for faster loading
+        self.cached_files = []  # Store files immediately without validation
+        self.validation_timer = QTimer()
+        self.validation_timer.setSingleShot(True)
+        self.validation_timer.timeout.connect(self._start_deferred_validation)
         
         # Progress dialog and worker thread
         self.progress_dialog = None
@@ -177,22 +183,35 @@ class DndHandler(QObject):
         self.on_drag_leave()
 
     def new_drop(self, event):
-        """Handle drop event"""
+        """Handle drop event - optimized for speed"""
         if event.mimeData().hasUrls():
             files = []
             urls = event.mimeData().urls()
             
+            # Quick path collection without validation
             for url in urls:
                 file_path = url.toLocalFile()
                 if os.path.isfile(file_path):
                     files.append(file_path)
                 elif os.path.isdir(file_path):
-                    for root, dirs, filenames in os.walk(file_path):
-                        for filename in filenames:
-                            files.append(os.path.join(root, filename))
+                    # Quick folder scan - limit files for responsiveness
+                    folder_files = []
+                    try:
+                        for root, dirs, filenames in os.walk(file_path):
+                            for filename in filenames:
+                                folder_files.append(os.path.join(root, filename))
+                            if len(folder_files) > 500:  # Limit for drag-drop responsiveness
+                                break
+                    except:
+                        pass
+                    files.extend(folder_files)
             
             if files:
-                self.load_files(files)
+                # Cache immediately and show feedback
+                self.cached_files = files[:]
+                self.status_helper.show_status(f"Dropped {len(files)} files - Processing...", self.status_helper.PRIORITY_NORMAL)
+                # Start validation with short delay
+                self.validation_timer.start(50)  # Shorter delay for drag-drop
                 event.accept()
             else:
                 event.ignore()
@@ -220,7 +239,7 @@ class DndHandler(QObject):
             self.dnd_frame.style().polish(self.dnd_frame)
     
     def open_files(self):
-        """Open file dialog to select multiple image files"""
+        """Open file dialog to select multiple image files - optimized for speed"""
         # Create image file filter for common formats only
         image_filter = (
             "Image Files (*.jpg *.jpeg *.png *.tiff *.tif *.webp);;All Files (*.*)"
@@ -233,33 +252,69 @@ class DndHandler(QObject):
             image_filter
         )
         if files:
-            # Update last directory to the directory of the first selected file
+            # Update last directory immediately
             self.last_directory = os.path.dirname(files[0])
-            self.start_file_loading(files)
+            # Cache files immediately without validation for speed
+            self._cache_files_immediately(files)
+
     def open_folder(self):
-        """Open folder dialog to select a folder"""
+        """Open folder dialog to select a folder - optimized for speed"""
         folder = QFileDialog.getExistingDirectory(
             self.dnd_widget,
             "Select Folder",
             self.last_directory if self.last_directory else os.path.expanduser("~")
         )
         if folder:
-            # Update last directory to the selected folder
+            # Update last directory immediately
             self.last_directory = folder
-            
-            # Get all files in the folder recursively
-            files = []
+            # Show immediate feedback
+            self.status_helper.show_status("Scanning folder contents...", self.status_helper.PRIORITY_NORMAL)
+            # Cache folder scan immediately without deep validation
+            self._cache_folder_immediately(folder)
+
+    def _cache_files_immediately(self, files):
+        """Cache files immediately for instant UI response"""
+        self.cached_files = files[:]  # Copy the list
+        # Show immediate feedback
+        self.status_helper.show_status(f"Cached {len(files)} files - Validating...", self.status_helper.PRIORITY_NORMAL)
+        # Start deferred validation after short delay
+        self.validation_timer.start(100)  # 100ms delay for UI responsiveness
+
+    def _cache_folder_immediately(self, folder):
+        """Cache folder contents immediately with basic file scan"""
+        files = []
+        try:
+            # Quick scan - only get file paths without validation
             for root, dirs, filenames in os.walk(folder):
                 for filename in filenames:
                     files.append(os.path.join(root, filename))
-            
-            if files:
-                self.start_file_loading(files)
-            else:                
-                self.status_helper.show_status("No files found in folder", self.status_helper.PRIORITY_NORMAL)
-    
+                # Limit initial scan to prevent freeze
+                if len(files) > 1000:  # Stop at 1000 files for responsiveness
+                    break
+        except Exception as e:
+            print(f"Error scanning folder: {e}")
+            self.status_helper.show_error("Error scanning folder")
+            return
+        
+        if files:
+            self.cached_files = files
+            self.status_helper.show_status(f"Found {len(files)} files - Validating...", self.status_helper.PRIORITY_NORMAL)
+            # Start deferred validation
+            self.validation_timer.start(100)
+        else:
+            self.status_helper.show_status("No files found in folder", self.status_helper.PRIORITY_NORMAL)
+
+    def _start_deferred_validation(self):
+        """Start validation of cached files in background"""
+        if self.cached_files:
+            self.start_file_loading(self.cached_files)
+
     def load_files(self, files):
-        """Load files and delegate to work handler - now just calls start_file_loading"""
+        """Load files and delegate to work handler - optimized entry point"""
+        # Cache immediately for speed
+        self.cached_files = files[:]
+        self.status_helper.show_status(f"Processing {len(files)} files...", self.status_helper.PRIORITY_NORMAL)
+        # Start validation immediately since files are already provided
         self.start_file_loading(files)
     
     def start_file_loading(self, files):

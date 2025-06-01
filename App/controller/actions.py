@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QWidget, QFileDialog
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, QTimer
 import qtawesome as qta
 import os
 
@@ -16,6 +16,7 @@ class ActionsController(QObject):
         self.output_path = ""  # Store selected output path
         # Store references for settings dialog
         self.config_manager = None
+        
         self.setup_ui()
         self.connect_signals()
         # Set initial status
@@ -158,51 +159,61 @@ class ActionsController(QObject):
         self.status_helper.show_ready("Process stopped")
     
     def on_output_destination_clicked(self):
-        """Handle output destination button click"""
+        """Handle output destination button click - ultra fast"""
+        # Use native dialog for better performance
         folder = QFileDialog.getExistingDirectory(
             self.actions_widget,
             "Select Output Folder",
-            self.output_path if self.output_path else os.path.expanduser("~")
+            self.output_path if self.output_path else os.path.expanduser("~"),
+            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks  # Optimize dialog
         )
         
         if folder:
+            # Set path immediately - no validation needed since user selected it
             self.output_path = folder
             self.update_output_path_label()
-            self.output_destination_changed.emit(folder)
+            
+            # Show immediate feedback
             self.status_helper.show_status(f"Output folder set: {self.truncate_path(folder)}", self.status_helper.PRIORITY_NORMAL)
-    
+            
+            # Emit signal immediately
+            self.output_destination_changed.emit(folder)
+
     def update_output_path_label(self):
-        """Update the output path label with truncated path"""
+        """Update the output path label with truncated path - optimized"""
         path_label = self.actions_widget.findChild(QWidget, "outputPathLabel")
         if path_label:
             if self.output_path:
+                # Quick truncation without file system access
                 truncated_path = self.truncate_path(self.output_path)
                 path_label.setText(truncated_path)
                 path_label.setStyleSheet("color: #ff7f36; font-size: 11px; font-weight: bold; margin: 2px;")
             else:
                 path_label.setText("No output folder selected")
                 path_label.setStyleSheet("color: rgba(138, 142, 145, 0.8); font-size: 11px; font-style: italic; margin: 2px;")
-    
+
     def truncate_path(self, path):
-        """Truncate path to show drive and last two folders"""
+        """Truncate path to show last two folders only - ultra fast"""
         if not path:
             return ""
         
-        # Normalize path separators
-        path = os.path.normpath(path)
-        parts = path.split(os.sep)
-        
-        if len(parts) <= 3:
-            # Short path, return as is
-            return path
-        else:
-            # Long path: show drive + ... + parent folder + current folder
-            drive = parts[0] + os.sep  # e.g., "D:\"
-            parent_folder = parts[-2] if len(parts) > 1 else ""
-            current_folder = parts[-1]
+        try:
+            # Fast path truncation without file system access or drive checking
+            path = os.path.normpath(path)
+            parts = path.split(os.sep)
             
-            return f"{drive}...{os.sep}{parent_folder}{os.sep}{current_folder}"
-    
+            if len(parts) <= 2:
+                # Short path, just show folder name
+                return parts[-1] if parts else ""
+            else:
+                # Show only last two folders: parent/current
+                parent_folder = parts[-2] if len(parts) > 1 else ""
+                current_folder = parts[-1]
+                return f"...{os.sep}{parent_folder}{os.sep}{current_folder}"
+        except Exception:
+            # Fallback to just the folder name
+            return os.path.basename(path) if path else ""
+
     def get_output_path(self):
         """Get the current output path"""
         return self.output_path
@@ -212,12 +223,12 @@ class ActionsController(QObject):
         return self.output_path
     
     def set_output_path(self, path):
-        """Set the output path programmatically"""
-        if os.path.isdir(path):
-            self.output_path = path
-            self.update_output_path_label()
-            self.output_destination_changed.emit(path)
-    
+        """Set the output path programmatically - ultra fast"""
+        # Set path immediately without any validation
+        self.output_path = path
+        self.update_output_path_label()
+        self.output_destination_changed.emit(path)
+
     def set_running_state(self, is_running: bool):
         """Set the state of buttons based on running status"""
         if self.actions_widget:
