@@ -159,34 +159,27 @@ class ActionsController(QObject):
         self.status_helper.show_ready("Process stopped")
     
     def on_output_destination_clicked(self):
-        """Handle output destination button click - ultra fast"""
-        # Use native dialog for better performance
+        """Handle output destination button click - ultra instant"""
+        # Minimal file dialog for maximum speed
         folder = QFileDialog.getExistingDirectory(
             self.actions_widget,
             "Select Output Folder",
-            self.output_path if self.output_path else os.path.expanduser("~"),
-            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks  # Optimize dialog
+            self.output_path if self.output_path else os.path.expanduser("~")
         )
         
         if folder:
-            # Set path immediately - no validation needed since user selected it
+            # Instant path assignment - no processing
             self.output_path = folder
             self.update_output_path_label()
-            
-            # Show immediate feedback
-            self.status_helper.show_status(f"Output folder set: {self.truncate_path(folder)}", self.status_helper.PRIORITY_NORMAL)
-            
-            # Emit signal immediately
             self.output_destination_changed.emit(folder)
 
     def update_output_path_label(self):
-        """Update the output path label with truncated path - optimized"""
+        """Update the output path label - instant update"""
         path_label = self.actions_widget.findChild(QWidget, "outputPathLabel")
         if path_label:
             if self.output_path:
-                # Quick truncation without file system access
-                truncated_path = self.truncate_path(self.output_path)
-                path_label.setText(truncated_path)
+                # Direct truncation - no file system calls
+                path_label.setText(self.truncate_path(self.output_path))
                 path_label.setStyleSheet("color: #ff7f36; font-size: 11px; font-weight: bold; margin: 2px;")
             else:
                 path_label.setText("No output folder selected")
