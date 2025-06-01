@@ -562,10 +562,8 @@ QPushButton#outputDestinationButton:disabled {
 
 /* Settings Dialog Styling */
 QDialog#SettingsDialog {
-    background-color: #2b2b2b;
     border: 2px solid rgba(255, 127, 54, 0.3);
     border-radius: 15px;
-    color: white;
 }
 
 QDialog#SettingsDialog QLabel#titleLabel {
@@ -590,7 +588,6 @@ QDialog#SettingsDialog QLabel#apiKeyLabel {
     border: none;
     font-weight: bold;
     font-size: 12px;
-    color: white;
 }
 
 QDialog#SettingsDialog QLineEdit#apiKeyLineEdit {
@@ -600,7 +597,6 @@ QDialog#SettingsDialog QLineEdit#apiKeyLineEdit {
     font-size: 12px;
     font-family: 'Courier New', monospace;
     background-color: rgba(138, 142, 145, 0.05);
-    color: white;
 }
 
 QDialog#SettingsDialog QLineEdit#apiKeyLineEdit:focus {
@@ -811,131 +807,4 @@ QWidget#StatisticsWidget QLabel#helpLabel a:hover {
     color: #e6722f;
     outline: none;
     border: none;
-}
-
-/* Processing Dialog Styling */
-QDialog#ProcessingDialog {
-    background-color: #2b2b2b;
-    border: 2px solid rgba(255, 127, 54, 0.3);
-    border-radius: 15px;
-    color: white;
-}
-
-/* Processing Dialog Title Label */
-QDialog#ProcessingDialog QLabel#titleLabel {
-    background-color: transparent;
-    border: none;
-    color: white;
-    font-weight: bold;
-    font-size: 14px;
-    padding: 5px;
-    margin: 5px 0px;
-}
-
-/* Processing Dialog Status Label */
-QDialog#ProcessingDialog QLabel#statusLabel {
-    background-color: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 12px;
-    padding: 2px;
-    margin: 2px 0px;
-}
-
-/* Processing Dialog Progress Bar */
-QDialog#ProcessingDialog QProgressBar {
-    border: 1px solid rgba(138, 142, 145, 0.3);
-    border-radius: 8px;
-    background-color: rgba(138, 142, 145, 0.1);
-    text-align: center;
-    min-height: 25px;
-    font-weight: bold;
-    font-size: 12px;
-    color: white;
-    margin: 5px 0px;
-}
-
-QDialog#ProcessingDialog QProgressBar::chunk {
-    background-color: #ff7f36;
-    border-radius: 6px;
-    margin: 1px;
-}
-
-/* Processing Dialog Results Text Area */
-QDialog#ProcessingDialog QTextEdit#resultsText {
-    background-color: rgba(138, 142, 145, 0.05);
-    border: 1px solid rgba(138, 142, 145, 0.3);
-    border-radius: 8px;
-    color: white;
-    padding: 8px;
-    font-family: 'Consolas', 'Monaco', monospace;
-    font-size: 11px;
-    margin: 5px 0px;
-}
-
-QDialog#ProcessingDialog QTextEdit#resultsText:focus {
-    border: 1px solid rgba(255, 127, 54, 0.5);
-    outline: none;
-}
-
-/* Processing Dialog Action Button (Cancel/Close) */
-QDialog#ProcessingDialog QPushButton#actionButton {
-    background-color: #dc3545;
-    color: white;
-    border: 2px solid transparent;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-weight: bold;
-    font-size: 12px;
-    min-width: 100px;
-    min-height: 20px;
-    outline: none;
-    border-style: solid;
-    margin: 5px;
-}
-
-QDialog#ProcessingDialog QPushButton#actionButton:hover {
-    background-color: #c82333;
-}
-
-QDialog#ProcessingDialog QPushButton#actionButton:pressed {
-    background-color: #bd2130;
-}
-
-QDialog#ProcessingDialog QPushButton#actionButton:disabled {
-    background-color: rgba(138, 142, 145, 0.3);
-    color: rgba(255, 255, 255, 0.5);
-    border: 2px solid transparent;
-}
-
-/* Processing Dialog - Success state button */
-QDialog#ProcessingDialog QPushButton#actionButton[state="success"] {
-    background-color: #28a745;
-}
-
-QDialog#ProcessingDialog QPushButton#actionButton[state="success"]:hover {
-    background-color: #218838;
-}
-
-QDialog#ProcessingDialog QPushButton#actionButton[state="success"]:pressed {
-    background-color: #1e7e34;
-}
-
-/* Processing Dialog - Error state button */
-QDialog#ProcessingDialog QPushButton#actionButton[state="error"] {
-    background-color: #dc3545;
-}
-
-/* Processing Dialog - Cancelled state button */
-QDialog#ProcessingDialog QPushButton#actionButton[state="cancelled"] {
-    background-color: #ffc107;
-    color: #212529;
-}
-
-QDialog#ProcessingDialog QPushButton#actionButton[state="cancelled"]:hover {
-    background-color: #e0a800;
-}
-
-QDialog#ProcessingDialog QPushButton#actionButton[state="cancelled"]:pressed {
-    background-color: #d39e00;
 }
