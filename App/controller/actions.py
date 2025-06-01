@@ -16,9 +16,12 @@ class ActionsController(QObject):
         self.output_path = ""  # Store selected output path
         # Store references for settings dialog
         self.config_manager = None
-        
+        # Cache widget references for instant access
+        self.output_path_label = None
         self.setup_ui()
         self.connect_signals()
+        # Cache widget references after UI setup
+        self.cache_widget_references()
         # Set initial status
         self.status_helper.show_ready("System ready")
     
@@ -57,6 +60,11 @@ class ActionsController(QObject):
                 folder_icon = qta.icon('fa6s.folder-open', color='white')
                 output_button.setIcon(folder_icon)
     
+    def cache_widget_references(self):
+        """Cache widget references for instant access - prevents repeated findChild calls"""
+        if self.actions_widget:
+            self.output_path_label = self.actions_widget.findChild(QWidget, "outputPathLabel")
+
     def connect_signals(self):
         """Connect button signals to slots"""
         if self.actions_widget:
@@ -166,7 +174,6 @@ class ActionsController(QObject):
             "Select Output Folder",
             self.output_path if self.output_path else os.path.expanduser("~")
         )
-        
         if folder:
             # Instant path assignment - no processing
             self.output_path = folder
@@ -174,16 +181,40 @@ class ActionsController(QObject):
             self.output_destination_changed.emit(folder)
 
     def update_output_path_label(self):
-        """Update the output path label - instant update"""
-        path_label = self.actions_widget.findChild(QWidget, "outputPathLabel")
-        if path_label:
+        """Update the output path label - INSTANT update with cached reference"""
+        if self.output_path_label:  # Use cached reference
             if self.output_path:
-                # Direct truncation - no file system calls
-                path_label.setText(self.truncate_path(self.output_path))
-                path_label.setStyleSheet("color: #ff7f36; font-size: 11px; font-weight: bold; margin: 2px;")
+                # Ultra-fast truncation - no file system calls
+                self.output_path_label.setText(self.truncate_path_fast(self.output_path))
+                # Apply style only if needed to avoid unnecessary re-rendering
+                if "color: #ff7f36" not in self.output_path_label.styleSheet():
+                    self.output_path_label.setStyleSheet("color: #ff7f36; font-size: 11px; font-weight: bold; margin: 2px;")
             else:
-                path_label.setText("No output folder selected")
-                path_label.setStyleSheet("color: rgba(138, 142, 145, 0.8); font-size: 11px; font-style: italic; margin: 2px;")
+                self.output_path_label.setText("No output folder selected")
+                if "rgba(138, 142, 145" not in self.output_path_label.styleSheet():
+                    self.output_path_label.setStyleSheet("color: rgba(138, 142, 145, 0.8); font-size: 11px; font-style: italic; margin: 2px;")
+
+    def truncate_path_fast(self, path):
+        """Ultra-fast path truncation - ZERO file system calls"""
+        if not path:
+            return ""
+        
+        try:
+            # Pure string manipulation - no os.path calls
+            path = path.replace('\\', '/').replace('//', '/')  # Normalize separators
+            parts = path.split('/')
+            
+            if len(parts) <= 2:
+                return parts[-1] if parts else ""
+            else:
+                # Show only last two folders: parent/current
+                return f".../{parts[-2]}/{parts[-1]}"
+        except:
+            # Emergency fallback - just return last part after last separator
+            try:
+                return path.split('/')[-1] if '/' in path else path.split('\\')[-1] if '\\' in path else path
+            except:
+                return "Selected Folder"
 
     def truncate_path(self, path):
         """Truncate path to show last two folders only - ultra fast"""

@@ -92,7 +92,6 @@ QWidget#DndAreaWidget QPushButton#openFolderButton:disabled {
 /* Work Area Action Dropdown */
 QWidget#WorkAreaWidget QComboBox#actionComboBox {
     background-color: #ff7f36;
-    color: white;
     border: none;
     padding: 6px 12px;
     border-radius: 15px;
