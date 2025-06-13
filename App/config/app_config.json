@@ -34,15 +34,14 @@
         ]
     },
     "api_validation_cache": {
-        "validation_cache": {
-        },
+        "validation_cache": {},
         "last_validation_time": 0,
         "last_updated": 0
     },
     "api_daily_tracking": {
-        "last_reset_date": "2025-05-30",
+        "last_reset_date": "2025-06-13",
         "daily_api_calls": 0,
         "last_fetch_time": 0,
-        "last_updated": 0
+        "last_updated": 1749831460612
     }
 }
